@@ -1,9 +1,12 @@
+#include <SPI.h>
+#include <MCP492X.h>
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 #include "Configuration.h"
 
 Adafruit_INA219 ina219(0x40);
 
+MCP492X VIdac(dac_cs);
 
 void setup(void) 
 {
@@ -15,6 +18,7 @@ pinMode(m1dir, OUTPUT);
 pinMode(m2dir, OUTPUT);
 pinMode(m1pwm, OUTPUT);
 pinMode(m2pwm, OUTPUT);
+pinMode(ldac, OUTPUT);
 
 //put the outputs to sleep and set PWM off to begin with
 digitalWrite(m1slp, LOW);
@@ -23,6 +27,9 @@ digitalWrite(m1pwm, LOW);
 digitalWrite(m2pwm, LOW);
 digitalWrite(m1dir, LOW);
 digitalWrite(m2dir, LOW);
+digitalWrite(ldac, HIGH);
+
+
 
   Serial.begin(115200);
   while (!Serial) {
@@ -49,7 +56,11 @@ digitalWrite(m2dir, LOW);
   pinMode(13,OUTPUT);
   startTimer(TC1, 0, TC3_IRQn, 10); //TC1 channel 0, the IRQ for that channel and the desired frequency
   //digitalWrite(13, HIGH);
-  m1_switch(on, AtoB);
+  // m1_switch(on, AtoB);
+
+  VIdac.begin();
+  
+  dacUp(7.63, 965);
 }
 
 //=============================================================================================
@@ -77,6 +88,24 @@ void loop(void)
 //=============================================================================================
 //=============================================================================================
 //                                   POWER CONTROL FUNCTIONS
+//=============================================================================================
+//=============================================================================================
+void dacUp(float voltage, int current){
+  unsigned int v_dig = int(round(voltage*v_factor));
+  unsigned int i_dig = map(current, 0, 5000, 4055, 0);//int(round(current*i_factor));
+  Serial.println(v_dig);
+  Serial.println(i_dig);
+
+  VIdac.analogWrite(Vdac, 0, 0, 1, v_dig);
+  VIdac.analogWrite(Idac, 0, 0, 1, i_dig);
+  digitalWrite(ldac, LOW);
+  delay(2);
+  digitalWrite(ldac, HIGH);
+  
+  return;
+}
+
+
 //=============================================================================================
 //=============================================================================================
 void m1_switch(boolean state, boolean dir){
@@ -134,6 +163,7 @@ void get_elec(){
   Serial.print("Current:       "); Serial.print(current_mA); Serial.println(" mA");
   Serial.print("Power:         "); Serial.print(power_mW); Serial.println(" mW");
   Serial.println("");
+  
   return;
 }
 
@@ -144,7 +174,6 @@ void get_elec(){
 void TC3_Handler()
 {
         TC_GetStatus(TC1, 0);
-
         iv_sample=true; //set flag for electrical parameter sample collection
 }
 
