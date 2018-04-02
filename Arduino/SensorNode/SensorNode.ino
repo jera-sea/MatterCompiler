@@ -8,6 +8,16 @@ Adafruit_INA219 ina219(0x40);
 
 MCP492X VIdac(dac_cs);
 
+
+
+float oe_voltage = 3.2;
+float oe_current = 156.32;
+float ie_voltage = 2.1;
+float ie_current = 15.67;
+float surf_temp=10.2;
+float el_flow = 3.2;
+float total_charge_transfer = 37.0;
+
 void setup(void) 
 {
 pinMode(m1flt, INPUT_PULLUP);
@@ -77,12 +87,34 @@ void loop(void)
     get_elec(); //sample electrical parameters
   }
 
-
-  //delay(50);
   
+  delay(2000);
+  send_sample();
  // m1_ground();
  //m1_switch(off, AtoB);
 
+}
+
+//=============================================================================================
+//=============================================================================================
+void send_sample(){
+  Serial.println("sID");
+  //Serial.print(oe_voltage + ',' + oe_current + ',' + ie_voltage + ',' + ie_current + ',' + surf_temp + ',' + el_flow + ',' + total_charge_transfer);
+  Serial.print(oe_voltage);
+ Serial.print(":");
+ Serial.print(oe_current);
+ Serial.print(":");
+ Serial.print(ie_voltage);
+  Serial.print(":");
+ Serial.print(ie_current);
+  Serial.print(":");
+ Serial.print(surf_temp);
+  Serial.print(":");
+ Serial.print(el_flow);
+   Serial.print(":");
+ Serial.println(total_charge_transfer);
+
+  return;
 }
 
 //=============================================================================================
@@ -93,8 +125,8 @@ void loop(void)
 void dacUp(float voltage, int current){
   unsigned int v_dig = int(round(voltage*v_factor));
   unsigned int i_dig = map(current, 0, 5000, 4055, 0);//int(round(current*i_factor));
-  Serial.println(v_dig);
-  Serial.println(i_dig);
+  //Serial.println(v_dig);
+  //Serial.println(i_dig);
 
   VIdac.analogWrite(Vdac, 0, 0, 1, v_dig);
   VIdac.analogWrite(Idac, 0, 0, 1, i_dig);
@@ -112,14 +144,14 @@ void m1_switch(boolean state, boolean dir){
 
   //first set the direction
   if(dir){
-    Serial.println("Current flow A to B");
+    //Serial.println("Current flow A to B");
     digitalWrite(m1dir, LOW);} //current flow A to B
   else{
     digitalWrite(m1dir, HIGH);}
 
   //set pwm value and switch the sleep bit
   if(state){
-    Serial.println("Waking up and turning full on");
+    //Serial.println("Waking up and turning full on");
     digitalWrite(m1pwm, HIGH); //switch pwm first to make sure the outputs do what you want when awoken
     digitalWrite(m1slp, HIGH);
   }
@@ -156,13 +188,14 @@ void get_elec(){
   current_mA = ina219.getCurrent_mA();
   power_mW = ina219.getPower_mW();
   loadvoltage = busvoltage + (shuntvoltage / 1000);
-  
+  /*
   Serial.print("Bus Voltage:   "); Serial.print(busvoltage); Serial.println(" V");
   Serial.print("Shunt Voltage: "); Serial.print(shuntvoltage); Serial.println(" mV");
   Serial.print("Load Voltage:  "); Serial.print(loadvoltage); Serial.println(" V");
   Serial.print("Current:       "); Serial.print(current_mA); Serial.println(" mA");
   Serial.print("Power:         "); Serial.print(power_mW); Serial.println(" mW");
   Serial.println("");
+  */
   
   return;
 }
@@ -175,6 +208,7 @@ void TC3_Handler()
 {
         TC_GetStatus(TC1, 0);
         iv_sample=true; //set flag for electrical parameter sample collection
+        return;
 }
 
 //=============================================================================================
