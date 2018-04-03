@@ -24,6 +24,11 @@
 //                                      Flags
 //=============================================================================================
 volatile boolean iv_sample = false;
+volatile boolean output_update_flag = false;
+boolean scan_complete = true;
+boolean scan_dir = true;
+
+
 
 //=============================================================================================
 //                                      word variables

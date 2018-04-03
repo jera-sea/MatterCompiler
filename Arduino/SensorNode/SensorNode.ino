@@ -9,15 +9,22 @@ Adafruit_INA219 ina219(0x40);
 MCP492X VIdac(dac_cs);
 
 
-
+//sense variables
 float oe_voltage = 3.2;
 float oe_current = 156.32;
 float ie_voltage = 2.1;
 float ie_current = 15.67;
 float surf_temp=10.2;
 float el_flow = 3.2;
-float total_charge_transfer = 37.0;
+float total_charge_transfer = 0.0; //dummy value this will be calculated on the pi side
 
+//variables for potentiodynamic sweeps
+float volt_step = 0.0;
+float scan_limit = 0.0;
+
+//power control variables
+float current_voltage = 0.0; // this is the output voltage of the OPA regulator not the cell voltage
+int current_current = 0;
 void setup(void) 
 {
 pinMode(m1flt, INPUT_PULLUP);
@@ -29,6 +36,7 @@ pinMode(m2dir, OUTPUT);
 pinMode(m1pwm, OUTPUT);
 pinMode(m2pwm, OUTPUT);
 pinMode(ldac, OUTPUT);
+  pinMode(13,OUTPUT);
 
 //put the outputs to sleep and set PWM off to begin with
 digitalWrite(m1slp, LOW);
@@ -63,14 +71,16 @@ digitalWrite(ldac, HIGH);
   Serial.println("Measuring voltage and current with INA219 ...");
 
   //Sensor Sample Rates
-  pinMode(13,OUTPUT);
+
   startTimer(TC1, 0, TC3_IRQn, 10); //TC1 channel 0, the IRQ for that channel and the desired frequency
+  
   //digitalWrite(13, HIGH);
   // m1_switch(on, AtoB);
 
   VIdac.begin();
-  
-  dacUp(7.63, 965);
+
+  fwd_voltage_scan(5.2, 23, true);
+  //dacUp(7.63, 965);
 }
 
 //=============================================================================================
@@ -87,9 +97,14 @@ void loop(void)
     get_elec(); //sample electrical parameters
   }
 
+  if(output_update_flag){
+    scan_update();
+    Serial.println(current_voltage);
+  }
+
   
-  delay(2000);
-  send_sample();
+  //delay(2000);
+  //send_sample();
  // m1_ground();
  //m1_switch(off, AtoB);
 
@@ -122,7 +137,49 @@ void send_sample(){
 //                                   POWER CONTROL FUNCTIONS
 //=============================================================================================
 //=============================================================================================
+void fwd_voltage_scan(float scanRate, float target_v, boolean electrode){
+  scan_limit = target_v;
+  scan_dir=true; //set scan direction positive
+  dacUp(0.0, 4000);
+  if(electrode){ //outer electrode selected
+    volt_step = scanRate/10;
+    startTimer(TC1, 1, TC4_IRQn, 10);
+    Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
+  }
+  return;
+}
+//=============================================================================================
+//=============================================================================================
+void scan_update(){
+  output_update_flag=false;
+  //Serial.println("SCAN UPDATE"); Serial.println(scan_limit);
+  float new_voltage = current_voltage + volt_step;
+
+  if(current_voltage>=scan_limit){
+    scan_dir=false;
+  }
+  if(scan_dir){
+    dacUp(new_voltage, 4000); //increase output voltage
+  }
+  else{
+    new_voltage=current_voltage-volt_step;
+    if(new_voltage<0.0){
+      new_voltage=0.0;
+      scan_complete = true;
+      Serial.println("SCAN COMPLETE");
+      stopTimer(TC4_IRQn); //stop scan update timer
+    }
+    dacUp(new_voltage, 4000); //decrease output voltage
+  }
+
+  return;
+}
+
+//=============================================================================================
+//=============================================================================================
 void dacUp(float voltage, int current){
+  current_voltage = voltage;
+  current_current = current;
   unsigned int v_dig = int(round(voltage*v_factor));
   unsigned int i_dig = map(current, 0, 5000, 4055, 0);//int(round(current*i_factor));
   //Serial.println(v_dig);
@@ -182,12 +239,16 @@ void get_elec(){
   float current_mA = 0;
   float loadvoltage = 0;
   float power_mW = 0;
-  
+
+  //sample the two ina219 sensors on either side of the cell
   shuntvoltage = ina219.getShuntVoltage_mV();
   busvoltage = ina219.getBusVoltage_V();
   current_mA = ina219.getCurrent_mA();
   power_mW = ina219.getPower_mW();
-  loadvoltage = busvoltage + (shuntvoltage / 1000);
+  //loadvoltage 
+  oe_voltage = busvoltage + (shuntvoltage / 1000); //still need to subtract the lowside transistor here for pulse reverse
+
+  
   /*
   Serial.print("Bus Voltage:   "); Serial.print(busvoltage); Serial.println(" V");
   Serial.print("Shunt Voltage: "); Serial.print(shuntvoltage); Serial.println(" mV");
@@ -201,16 +262,44 @@ void get_elec(){
 }
 
 //=============================================================================================
+//=============================================================================================
+void get_temp(){
+  float dummy_temp = 10.0;
+  //read temperatures here
+
+  surf_temp = dummy_temp;
+
+  return;
+}
+
+//=============================================================================================
+//=============================================================================================
+void set_flow(){
+  el_flow = 3.5;
+
+  return;
+}
+
+//=============================================================================================
 //                                Timer Interrupts
 //=============================================================================================
 //TC1 ch 0
 void TC3_Handler()
 {
         TC_GetStatus(TC1, 0);
+        //digitalWrite(13, l = !l);
         iv_sample=true; //set flag for electrical parameter sample collection
         return;
 }
-
+//=============================================================================================
+//=============================================================================================
+void TC4_Handler()
+{
+        TC_GetStatus(TC1, 1);
+        output_update_flag = true;
+        digitalWrite(13, l = !l);
+        return;
+}
 //=============================================================================================
 //=============================================================================================
 void startTimer(Tc *tc, uint32_t channel, IRQn_Type irq, uint32_t frequency) {
@@ -224,5 +313,8 @@ void startTimer(Tc *tc, uint32_t channel, IRQn_Type irq, uint32_t frequency) {
         tc->TC_CHANNEL[channel].TC_IER=TC_IER_CPCS;
         tc->TC_CHANNEL[channel].TC_IDR=~TC_IER_CPCS;
         NVIC_EnableIRQ(irq);
+}
+void stopTimer(IRQn_Type irq){
+  NVIC_DisableIRQ(irq);
 }
 
