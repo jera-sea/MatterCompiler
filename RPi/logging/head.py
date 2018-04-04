@@ -25,39 +25,40 @@ def main():
     while True:
         if ser.inWaiting() !=0:
             receive_data(ser, log)
-            print(type(log.tail(1)))
+            #print(type(log.tail(1)))
             print(log.tail(1))
             
             db.log_state("1.db", log.tail(1))
    
-            break
     
 
 def receive_data(ser, log):
-   # try:
-    in_serial = ser.readline()
-    while(in_serial != "sID = \r\n"):
-        if ser.inWaiting()==0:
-            break
+    try:
         in_serial = ser.readline()
+        while(in_serial != "sID = \r\n"):
+            if ser.inWaiting()==0:
+                break
+            in_serial = ser.readline()
+       # print(in_serial)    
+        in_serial = ser.readline()       
+        in_serial = str(ser.readline()).split(":")
         
-    in_serial = ser.readline()       
-    in_serial = str(ser.readline()).split(":")
 
-    log.loc[len(log.index)] = [float(in_serial[0].split("'")[1]), 
-                                float(in_serial[1]), 
-                                float(in_serial[2]), 
-                                float(in_serial[3]), 
-                                float(in_serial[4]), 
-                                float(in_serial[5]), 
-                                float(in_serial[6].strip("\\r\\n'")), 
-                                pd.Timestamp.now()]
-    
-    time_diff = log.time[len(log)] - log.time[len(log)-1]
-    
-    log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 5, center = False).mean()*time_diff.total_seconds()
-    
-    
+        if("sID" not in str(in_serial)):
+            log.loc[len(log.index)] = [float(in_serial[0].split("'")[1]), 
+                                        float(in_serial[1]), 
+                                        float(in_serial[2]), 
+                                        float(in_serial[3]), 
+                                        float(in_serial[4]), 
+                                        float(in_serial[5]), 
+                                        float(in_serial[6].strip("\\r\\n'")), 
+                                        pd.Timestamp.now()]
+            if(len(log)>3):
+                time_diff = log.time[len(log)] - log.time[len(log)-1]
+                log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 5, center = False).mean()*time_diff.total_seconds()
+            
+    except:
+        return
 
     
 database ="1.db"
@@ -105,6 +106,3 @@ db.populate_session(database,
 
 main()
 ser.close() 
-
-#if ser:
-ser.close()

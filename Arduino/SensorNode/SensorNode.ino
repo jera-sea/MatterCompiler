@@ -68,14 +68,14 @@ digitalWrite(ldac, HIGH);
 
   //Sensor Sample Rates
 
-  startTimer(TC1, 0, TC3_IRQn, 10); //TC1 channel 0, the IRQ for that channel and the desired frequency
+  startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, the IRQ for that channel and the desired frequency
   
   //digitalWrite(13, HIGH);
   // m1_switch(on, AtoB);
 
   VIdac.begin();
 
-  fwd_voltage_scan(5.2, 23, true);
+  fwd_voltage_scan(5.2, 10, true);
   //dacUp(7.63, 965);
 }
 
