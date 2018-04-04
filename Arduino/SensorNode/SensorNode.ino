@@ -50,14 +50,10 @@ digitalWrite(ldac, HIGH);
 
 
   Serial.begin(115200);
-  while (!Serial) {
-      // will pause Zero, Leonardo, etc until serial console opens
-      delay(1);
-  }
-
+  
   uint32_t currentFrequency;
     
-  Serial.println("Hello!");
+  //Serial.println("Hello!");
   
   // Initialize the INA219.
   // By default the initialization will use the largest range (32V, 2A).  However
@@ -68,7 +64,7 @@ digitalWrite(ldac, HIGH);
   // Or to use a lower 16V, 400mA range (higher precision on volts and amps):
   //ina219.setCalibration_16V_400mA();
 
-  Serial.println("Measuring voltage and current with INA219 ...");
+  //Serial.println("Measuring voltage and current with INA219 ...");
 
   //Sensor Sample Rates
 
@@ -95,11 +91,14 @@ void loop(void)
   if(iv_sample){
     iv_sample = false;
     get_elec(); //sample electrical parameters
+    get_temp();
+    set_flow();
+    send_sample();
   }
 
   if(output_update_flag){
     scan_update();
-    Serial.println(current_voltage);
+    //Serial.println(current_voltage);
   }
 
   
@@ -114,20 +113,19 @@ void loop(void)
 //=============================================================================================
 void send_sample(){
   Serial.println("sID");
-  //Serial.print(oe_voltage + ',' + oe_current + ',' + ie_voltage + ',' + ie_current + ',' + surf_temp + ',' + el_flow + ',' + total_charge_transfer);
   Serial.print(oe_voltage);
- Serial.print(":");
- Serial.print(oe_current);
- Serial.print(":");
- Serial.print(ie_voltage);
   Serial.print(":");
- Serial.print(ie_current);
+  Serial.print(oe_current);
   Serial.print(":");
- Serial.print(surf_temp);
+  Serial.print(ie_voltage);
   Serial.print(":");
- Serial.print(el_flow);
-   Serial.print(":");
- Serial.println(total_charge_transfer);
+  Serial.print(ie_current);
+  Serial.print(":");
+  Serial.print(surf_temp);
+  Serial.print(":");
+  Serial.print(el_flow);
+  Serial.print(":");
+  Serial.println(total_charge_transfer);
 
   return;
 }
@@ -144,7 +142,7 @@ void fwd_voltage_scan(float scanRate, float target_v, boolean electrode){
   if(electrode){ //outer electrode selected
     volt_step = scanRate/10;
     startTimer(TC1, 1, TC4_IRQn, 10);
-    Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
+    //Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
   }
   return;
 }
@@ -166,7 +164,7 @@ void scan_update(){
     if(new_voltage<0.0){
       new_voltage=0.0;
       scan_complete = true;
-      Serial.println("SCAN COMPLETE");
+      //Serial.println("SCAN COMPLETE");
       stopTimer(TC4_IRQn); //stop scan update timer
     }
     dacUp(new_voltage, 4000); //decrease output voltage

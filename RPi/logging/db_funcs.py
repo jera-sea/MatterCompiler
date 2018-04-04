@@ -40,7 +40,7 @@ def create_db(db_name, session_table, log_table):
                                                                 ie_current REAL, \
                                                                 surf_temp REAL, \
                                                                 el_flow REAL, \
-                                                                total_charge_transfer REAL, \
+                                                                total_charge REAL, \
                                                                 time TEXT)'.format(log_table))	
         except sql.Error as e:
             print("Error %s:" % e.args[0])
