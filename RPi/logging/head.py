@@ -5,33 +5,6 @@ import db_funcs as db
 
 col_names = ["oe_voltage", "oe_current","ie_voltage", "ie_current", "surf_temp", "el_flow", "total_charge", "time"]
 
-
-
-#try:
-#ser = serial.Serial('/dev/ttyACM0', 115200)
-
-#except:
- #   print("HW NODE NOT PRESENT!")
-
-
-def main():
-    try:
-        ser = serial.Serial(port='COM6', baudrate=115200)
-        print ("Hardware Node Connected")
-    except Exception as e:
-        print(e)
-    
-    log = pd.DataFrame(columns = col_names)
-    while True:
-        if ser.inWaiting() !=0:
-            receive_data(ser, log)
-            #print(type(log.tail(1)))
-            print(log.tail(1))
-            
-            db.log_state("1.db", log.tail(1))
-   
-    
-
 def receive_data(ser, log):
     try:
         in_serial = ser.readline()
@@ -60,6 +33,25 @@ def receive_data(ser, log):
     except:
         return
 
+
+######################################################################################
+def main():
+
+    try:
+        ser = serial.Serial(port='COM6', baudrate=115200)
+        print ("Hardware Node Connected")
+    except Exception as e:
+        print(e)
+    
+    while True:
+        if ser.inWaiting() !=0:
+            receive_data(ser, log)
+            db.log_state("1.db", log.tail(1))
+        
+   
+    
+######################################################################################
+   
     
 database ="1.db"
 session_id = 1
@@ -104,5 +96,10 @@ db.populate_session(database,
                  oce_area,
                  ice_area)
 
+
+log = pd.DataFrame(columns = col_names)
+
 main()
+
+
 ser.close() 

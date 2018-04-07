@@ -75,7 +75,7 @@ digitalWrite(ldac, HIGH);
 
   VIdac.begin();
 
-  fwd_voltage_scan(5.2, 10, true);
+  fwd_voltage_scan(30, 10, true);
   //dacUp(7.63, 965);
 }
 
@@ -139,9 +139,10 @@ void fwd_voltage_scan(float scanRate, float target_v, boolean electrode){
   scan_limit = target_v;
   scan_dir=true; //set scan direction positive
   dacUp(0.0, 4000);
+
   if(electrode){ //outer electrode selected
-    volt_step = scanRate/10;
-    startTimer(TC1, 1, TC4_IRQn, 10);
+    volt_step = target_v/(scanRate*500);    
+    startTimer(TC1, 1, TC4_IRQn, 500);
     //Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
   }
   return;
@@ -245,6 +246,7 @@ void get_elec(){
   power_mW = ina219.getPower_mW();
   //loadvoltage 
   oe_voltage = busvoltage + (shuntvoltage / 1000); //still need to subtract the lowside transistor here for pulse reverse
+  oe_current = current_mA;
 
   
   /*

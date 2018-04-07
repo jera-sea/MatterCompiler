@@ -45,6 +45,7 @@ def create_db(db_name, session_table, log_table):
         except sql.Error as e:
             print("Error %s:" % e.args[0])
             sys.exit(1)		
+        
         return
 #######################################################################################################################
 def populate_session(db_name, sID, pf, fp, rp, frd, rfd, fLoc, flowR, massR, Frate, Rrate, oeS, ieS, weR, weM, ceM, weA, oceA, iceA ):
