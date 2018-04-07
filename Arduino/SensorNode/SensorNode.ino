@@ -112,7 +112,7 @@ void loop(void)
 //=============================================================================================
 //=============================================================================================
 void send_sample(){
-  Serial.println("sID");
+  Serial.print("data:");
   Serial.print(oe_voltage);
   Serial.print(":");
   Serial.print(oe_current);

@@ -28,7 +28,7 @@ def receive_data(ser, log):
                                         pd.Timestamp.now()]
             if(len(log)>3):
                 time_diff = log.time[len(log)] - log.time[len(log)-1]
-                log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 5, center = False).mean()*time_diff.total_seconds()
+                log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 2, center = False).mean()*time_diff.total_seconds()
             
     except:
         return
