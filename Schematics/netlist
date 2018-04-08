@@ -1,0 +1,39 @@
+Netlist
+
+Exported from Power only.sch at 2018-03-28 10:48 PM
+
+EAGLE Version 8.6.3 Copyright (c) 1988-2018 Autodesk, Inc.
+
+Net      Part     Pad      Pin        Sheet
+
+GNDA     C1       1        1          1
+         IC1      4        V-         1
+         R2       1        1          1
+         U1       7        AVSS       1
+
+N$1      IC1      1        +IN        1
+         U1       6        VOUTB      1
+
+N$2      C1       2        2          1
+         IC1      3        ILIM       1
+         U1       8        VOUTA      1
+
+N$4      IC1      2        -IN        1
+         R1       1        1          1
+         R2       2        2          1
+
+N$5      U1       2        !CS        1
+
+N$6      U1       5        !LDAC      1
+
+N$7      U1       3        SCK        1
+
+N$8      U1       4        SDI        1
+
+V+       IC1      5        V+         1
+
+VCC      U1       1        VDD        1
+
+VCELL    IC1      6        OUT        1
+         R1       2        2          1
+

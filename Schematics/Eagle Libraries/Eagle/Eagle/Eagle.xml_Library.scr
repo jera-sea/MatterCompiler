@@ -1,0 +1,127 @@
+# Created by Ultra Librarian Gold 8.2.139 Copyright © 1999-2017
+# Frank Frank, Accelerated Designs
+
+Grid mil;
+Set Wire_Bend 2;
+
+
+Edit 'PDIP8_300MC.pac';
+Change Drill 39;
+Pad '1' Square 0 59 R0 (-300 300);
+Change Drill 39;
+Pad '2' Round 0 59 R0 (-300 200);
+Change Drill 39;
+Pad '3' Round 0 59 R0 (-300 100);
+Change Drill 39;
+Pad '4' Round 0 59 R0 (-300 0);
+Change Drill 39;
+Pad '5' Round 0 59 R0 (0 0);
+Change Drill 39;
+Pad '6' Round 0 59 R0 (0 100);
+Change Drill 39;
+Pad '7' Round 0 59 R0 (0 200);
+Change Drill 39;
+Pad '8' Round 0 59 R0 (0 300);
+Layer 21;
+Wire 6 (-295 -55) (-5 -55);
+Wire 6 (-5 -55) (-5 -42);
+Wire 6 (-5 355) (-295 355);
+Wire 6 (-295 355) (-295 343);
+Wire 6 (-295 257) (-295 242);
+Wire 6 (-295 158) (-295 142);
+Wire 6 (-295 58) (-295 42);
+Wire 6 (-295 -42) (-295 -55);
+Wire 6 (-5 42) (-5 58);
+Wire 6 (-5 142) (-5 158);
+Wire 6 (-5 242) (-5 258);
+Wire 6 (-5 342) (-5 355);
+Change Size 50;
+Change Ratio 6;
+Text '*' SR0 (-323 334);
+Layer 51;
+Wire 6 (-290 280) (-290 320);
+Wire 6 (-290 320) (-320 319);
+Wire 6 (-320 319) (-319 280);
+Wire 6 (-319 280) (-290 280);
+Wire 6 (-290 180) (-290 220);
+Wire 6 (-290 220) (-320 219);
+Wire 6 (-320 219) (-319 180);
+Wire 6 (-319 180) (-290 180);
+Wire 6 (-290 80) (-290 120);
+Wire 6 (-290 120) (-320 119);
+Wire 6 (-320 119) (-319 80);
+Wire 6 (-319 80) (-290 80);
+Wire 6 (-290 -20) (-290 20);
+Wire 6 (-290 20) (-319 19);
+Wire 6 (-319 19) (-319 -20);
+Wire 6 (-319 -20) (-290 -20);
+Wire 6 (-10 20) (-10 -20);
+Wire 6 (-10 -20) (20 -19);
+Wire 6 (20 -19) (19 20);
+Wire 6 (19 20) (-10 20);
+Wire 6 (-10 120) (-10 80);
+Wire 6 (-10 80) (20 81);
+Wire 6 (20 81) (19 120);
+Wire 6 (19 120) (-10 120);
+Wire 6 (-10 220) (-10 180);
+Wire 6 (-10 180) (19 181);
+Wire 6 (19 181) (19 220);
+Wire 6 (19 220) (-10 220);
+Wire 6 (-10 320) (-10 280);
+Wire 6 (-10 280) (19 281);
+Wire 6 (19 281) (19 320);
+Wire 6 (19 320) (-10 320);
+Wire 6 (-290 -50) (-10 -50);
+Wire 6 (-10 -50) (-10 350);
+Wire 6 (-10 350) (-290 350);
+Wire 6 (-290 350) (-290 -50);
+Change Size 50;
+Change Ratio 6;
+Text '*' SR0 (-303 275);
+Layer 25;
+Change Size 50;
+Change Ratio 6;
+Text '>Name' SR0 (-279 125);
+Layer 27;
+
+Edit 'MCP4822-E/P.sym';
+Layer 94;
+Pin '!CS' Pas None Middle R0 Both 0 (100 0)
+Pin '!LDAC' Pas None Middle R0 Both 0 (100 -100)
+Pin 'SCK' Pas None Middle R0 Both 0 (100 -200)
+Pin 'SDI' Pas None Middle R0 Both 0 (100 -300)
+Pin 'VDD' Pas None Middle R0 Both 0 (100 -400)
+Pin 'VOUTA' Pas None Middle R180 Both 0 (1700 100)
+Pin 'VOUTB' Pas None Middle R180 Both 0 (1700 0)
+Pin 'AVSS' Pas None Middle R180 Both 0 (1700 -400)
+Wire 6 (300 300) (300 -600);
+Wire 6 (300 -600) (1500 -600);
+Wire 6 (1500 -600) (1500 300);
+Wire 6 (1500 300) (300 300);
+Layer 97;
+Layer 95;
+Change Size 82;
+Change Ratio 6;
+Text '>Name' SR0 (714 459);
+Layer 96;
+Change Size 82;
+Change Ratio 6;
+Text '>Value' SR0 (689 359);
+
+Edit 'MCP4822-E/P.dev';
+Prefix 'U';
+Description '';
+Value Off;
+Add MCP4822-E/P 'A' Next  0 (0 0);
+Package 'PDIP8_300MC';
+Technology '';
+Attribute Manufacturer_Part_Number 'MCP4822EP';
+Attribute Vendor 'Microchip';
+Connect 'A.VDD' '1';
+Connect 'A.!CS' '2';
+Connect 'A.SCK' '3';
+Connect 'A.SDI' '4';
+Connect 'A.!LDAC' '5';
+Connect 'A.VOUTB' '6';
+Connect 'A.AVSS' '7';
+Connect 'A.VOUTA' '8';
