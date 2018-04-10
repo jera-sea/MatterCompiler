@@ -6317,32 +6317,36 @@ naming: grid - package width</description>
 <wire x1="177.8" y1="186.69" x2="177.8" y2="166.37" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$5" class="0">
+<net name="BROWN" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="!CS"/>
 <wire x1="91.44" y1="191.77" x2="62.23" y2="191.77" width="0.1524" layer="91"/>
 <pinref part="SL1" gate="G$1" pin="4"/>
+<label x="71.12" y="191.77" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="N$6" class="0">
+<net name="PURPLE" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="!LDAC"/>
 <wire x1="91.44" y1="189.23" x2="62.23" y2="189.23" width="0.1524" layer="91"/>
 <pinref part="SL1" gate="G$1" pin="3"/>
+<label x="71.12" y="189.23" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="N$7" class="0">
+<net name="BLUE" class="0">
 <segment>
 <wire x1="91.44" y1="186.69" x2="62.23" y2="186.69" width="0.1524" layer="91"/>
 <pinref part="U1" gate="A" pin="SCK"/>
 <pinref part="SL1" gate="G$1" pin="2"/>
+<label x="72.39" y="186.69" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="N$8" class="0">
+<net name="WHITE" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="SDI"/>
 <wire x1="91.44" y1="184.15" x2="62.23" y2="184.15" width="0.1524" layer="91"/>
 <pinref part="SL1" gate="G$1" pin="1"/>
+<label x="71.12" y="184.15" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="VCC" class="0">
