@@ -3,8 +3,12 @@
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 #include "Configuration.h"
+#include <OneWire.h>
 
-Adafruit_INA219 ina219(0x40);
+
+Adafruit_INA219 ina219(0x41); //top side ina219
+OneWire  ds(2);  // on pin 19 (a 5k6 pullup is present)
+byte sealed_addr[8] = {0x28, 0xA0, 0xCC, 0xE0, 0x08, 0x00, 0x00, 0x2D};
 
 MCP492X VIdac(dac_cs);
 
@@ -25,6 +29,16 @@ float scan_limit = 0.0;
 //power control variables
 float current_voltage = 0.0; // this is the output voltage of the OPA regulator not the cell voltage
 int current_current = 0;
+
+unsigned long current_time = 0;
+unsigned long previous_time = 0;
+
+//=============================================================================================
+//=============================================================================================
+//                                      SETUP
+//=============================================================================================
+//=============================================================================================
+
 void setup(void) 
 {
 pinMode(m1flt, INPUT_PULLUP);
@@ -47,36 +61,22 @@ digitalWrite(m1dir, LOW);
 digitalWrite(m2dir, LOW);
 digitalWrite(ldac, HIGH);
 
-
-
   Serial.begin(115200);
   
   uint32_t currentFrequency;
-    
-  //Serial.println("Hello!");
   
   // Initialize the INA219.
-  // By default the initialization will use the largest range (32V, 2A).  However
-  // you can call a setCalibration function to change this range (see comments).
   ina219.begin();
-  // To use a slightly lower 32V, 1A range (higher precision on amps):
-  //ina219.setCalibration_32V_1A();
-  // Or to use a lower 16V, 400mA range (higher precision on volts and amps):
-  //ina219.setCalibration_16V_400mA();
-
-  //Serial.println("Measuring voltage and current with INA219 ...");
-
   //Sensor Sample Rates
 
   startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, the IRQ for that channel and the desired frequency
   
-  //digitalWrite(13, HIGH);
   // m1_switch(on, AtoB);
 
   VIdac.begin();
 
   fwd_voltage_scan(30, 10, true);
-  //dacUp(7.63, 965);
+  //Serial.println("DS TEMP");
 }
 
 //=============================================================================================
@@ -86,12 +86,22 @@ digitalWrite(ldac, HIGH);
 //=============================================================================================
 void loop(void) 
 {
-
+  current_time=millis();
+  if(current_time-previous_time>1000){
+    previous_time = current_time;
+    if(ds_flag){
+      start_ds_conv();
+      ds_flag=false;
+    }
+    else{
+      get_ds_temp();
+      ds_flag=true;
+    }
+  }
 
   if(iv_sample){
     iv_sample = false;
     get_elec(); //sample electrical parameters
-    get_temp();
     set_flow();
     send_sample();
   }
@@ -263,11 +273,51 @@ void get_elec(){
 
 //=============================================================================================
 //=============================================================================================
-void get_temp(){
-  float dummy_temp = 10.0;
-  //read temperatures here
+void start_ds_conv(){
+    ds.reset();
+    ds.select(sealed_addr);
+    ds.write(0x44, 1);        // start conversion, with parasite power on at the end
+    return;
+  
+}
+void get_ds_temp(){
+  byte i;
+  byte present = 0;
+  byte type_s=0;
+  byte data[12];
+  float celsius, fahrenheit;
+  present = ds.reset();
+  ds.select(sealed_addr);    
+  ds.write(0xBE);         // Read Scratchpad
+  
+  for ( i = 0; i < 9; i++) {           // we need 9 bytes
+    data[i] = ds.read();
+  
+  }
+  
+  int16_t raw = (data[1] << 8) | data[0];
+  if (type_s) {
+    raw = raw << 3; // 9 bit resolution default
+    if (data[7] == 0x10) {
+      // "count remain" gives full 12 bit resolution
+      raw = (raw & 0xFFF0) + 12 - data[6];
+    }
+  } else {
+    byte cfg = (data[4] & 0x60);
+    // at lower res, the low bits are undefined, so let's zero them
+    if (cfg == 0x00) raw = raw & ~7;  // 9 bit resolution, 93.75 ms
+    else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
+    else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+    //// default is 12 bit resolution, 750 ms conversion time
+  }
+  celsius = (float)raw / 16.0;
+  fahrenheit = celsius * 1.8 + 32.0;
+  surf_temp = celsius;
+  return;
+}
 
-  surf_temp = dummy_temp;
+void get_temp(){
+
 
   return;
 }
