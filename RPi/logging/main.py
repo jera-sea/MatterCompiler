@@ -10,6 +10,7 @@ import sys, time, serial, datetime
 import numpy as np
 import pandas as pd
 import db_funcs as db
+import threading
 
 # This is our window from QtCreator
 import mainwindow_auto
@@ -32,31 +33,44 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         print ("Performing Potentiondynamic scan")
         
         
-def receive_data(ser, log):
+def receive_data(log):
     try:
-        in_serial = ser.readline()
-        #print(in_serial)
-        in_serial = str(ser.readline()).split(":")
-
+        ser = serial.Serial(port='COM6', baudrate=115200)
+        print ("Hardware Node Connected")
+    except Exception as e:
+        print(e)
         
-        log.loc[len(log.index)] = [float(in_serial[1]), 
-                                    float(in_serial[2]), 
-                                    float(in_serial[3]), 
-                                    float(in_serial[4]), 
-                                    float(in_serial[5]), 
-                                    float(in_serial[6]), 
-                                    float(in_serial[7].strip("\\r\\n'")), 
-                                    pd.Timestamp.now()]
-        if(len(log)>3):
-            time_diff = log.time[len(log)] - log.time[len(log)-1]
-            log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 2, center = False).mean()*time_diff.total_seconds()
+    while True:
+        if ser.inWaiting() !=0:
+            try:
+                in_serial = ser.readline()
+                #print(in_serial)
+                in_serial = str(ser.readline()).split(":")
             
-    except:
-        return
+                
+                log.loc[len(log.index)] = [float(in_serial[1]), 
+                                            float(in_serial[2]), 
+                                            float(in_serial[3]), 
+                                            float(in_serial[4]), 
+                                            float(in_serial[5]), 
+                                            float(in_serial[6]), 
+                                            float(in_serial[7].strip("\\r\\n'")), 
+                                            pd.Timestamp.now()]
+                """if(len(log)>3):
+                    time_diff = log.time[len(log)] - log.time[len(log)-1]
+                    log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 2, center = False).mean()*time_diff.total_seconds()
+                """    
+            except:
+                print("ERROR READING SERIAL DATA")
+            
+            db.log_state("1.db", log.tail(1))
  
+    
 # I feel better having one of these
 def main():
     #set session parameters which will later be passed from QT UI
+    col_names = ["oe_voltage", "oe_current","ie_voltage", "ie_current", "surf_temp", "el_flow", "total_charge", "time"]
+    
     database ="1.db"
     session_id = 1
     pulse_frequency = 2
@@ -83,7 +97,7 @@ def main():
     form = MainWindow()
     form.show()
      # without this, the script exits immediately.
-    sys.exit(app.exec_())
+    #sys.exit(app.exec_())
     
     #create new session log
     db.create_db(database, "session_data", "session_log")
@@ -110,17 +124,10 @@ def main():
     #create pandas dataframe to receive serial data and plot it
     log = pd.DataFrame(columns = col_names)
     
+    thread = threading.Thread(target=receive_data, args=(log,))
+    thread.start()
     
-    try:
-        ser = serial.Serial(port='COM6', baudrate=115200)
-        print ("Hardware Node Connected")
-    except Exception as e:
-        print(e)
-    
-    while True:
-        if ser.inWaiting() !=0:
-            receive_data(ser, log)
-            db.log_state("1.db", log.tail(1))
+    sys.exit(app.exec_())
 
  
 # python bit to figure how who started This
