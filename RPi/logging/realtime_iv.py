@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Apr  7 17:56:35 2018
+Graphing Code which updates directly from the database and maintains a live graph of the process
 
 @author: Jeran
 """

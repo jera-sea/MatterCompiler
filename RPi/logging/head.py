@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Main code which handles serial comms with HW nodes and DB logging
+@author: Jeran
+"""
+
 import sys, time, serial, datetime
 import numpy as np
 import pandas as pd

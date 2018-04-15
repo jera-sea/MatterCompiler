@@ -1,2 +1,4 @@
 pip install python-usbtmc
 pip install matplotlib
+apt-get install qt5-default
+apt-get install python3-pyqt5
