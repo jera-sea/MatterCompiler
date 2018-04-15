@@ -124,6 +124,7 @@ def main():
     #create pandas dataframe to receive serial data and plot it
     log = pd.DataFrame(columns = col_names)
     
+    #seperate blocking thread which handles serial reception
     thread = threading.Thread(target=receive_data, args=(log,))
     thread.start()
     
