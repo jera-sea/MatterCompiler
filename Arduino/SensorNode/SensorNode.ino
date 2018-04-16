@@ -52,8 +52,6 @@ void setup(void)
   // m1_switch(on, AtoB);
 
   VIdac.begin();
-
-  fwd_voltage_scan(1.0, true);
 }
 
 //=============================================================================================
@@ -108,6 +106,7 @@ void receive_command() {
   if (command.substring(0, command.indexOf(":")) == "SCANV") { //Start a voltage scan
     Serial.println("STARTING");
     scan_complete = false; //initiate scan
+    fwd_voltage_scan(true);
     startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate
   }
   if (command.substring(0, command.indexOf(":")) == "SCANI") { //start a current scan
@@ -116,8 +115,6 @@ void receive_command() {
   }
   if (command.substring(0, command.indexOf(":")) == "MAXV") { // maximum voltage for scan or polish followed by :<maximum_voltage>
     max_voltage = command.substring(command.indexOf(":") + 1).toFloat();
-    Serial.print("MAX VOLTAGE: ");
-    Serial.println(max_voltage);
   }
   if (command.substring(0, command.indexOf(":")) == "MINV") { // minimum voltage for scan or polish followed by :<minimum_voltage>
     min_voltage = command.substring(command.indexOf(":") + 1).toFloat();
@@ -127,6 +124,9 @@ void receive_command() {
   }
   if (command.substring(0, command.indexOf(":")) == "MINI") { // maximum voltage for scan or polish followed by :<maximum_current>
     min_current = command.substring(command.indexOf(":") + 1).toFloat();
+  }
+  if (command.substring(0, command.indexOf(":")) == "VSEC") { // maximum voltage for scan or polish followed by :<maximum_current>
+    volt_sec = command.substring(command.indexOf(":") + 1).toFloat();
   }
   return;
 
@@ -155,14 +155,14 @@ void send_sample() {
 //                                   POWER CONTROL FUNCTIONS
 //=============================================================================================
 //=============================================================================================
-void fwd_voltage_scan(float scanRate, boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
+void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
   scan_limit = max_voltage;
   scan_dir = true; //set scan direction positive
   dacUp(min_voltage, 4000);
 
   if (electrode) { //outer electrode selected
-    volt_step = scanRate / 500;
-    startTimer(TC1, 1, TC4_IRQn, 500);
+    volt_step = volt_sec / 100;
+    startTimer(TC1, 1, TC4_IRQn, 100);
     //Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
   }
   return;
@@ -205,11 +205,12 @@ void dacUp(float voltage, int current) {
   //Serial.println(v_dig);
   //Serial.println(i_dig);
 
+  //write new values to mcp dac channels A and B with synchronous update enabled
   VIdac.analogWrite(Vdac, 0, 0, 1, v_dig);
   VIdac.analogWrite(Idac, 0, 0, 1, i_dig);
   digitalWrite(ldac, LOW);
   delay(2);
-  digitalWrite(ldac, HIGH);
+  digitalWrite(ldac, HIGH); //synchrinous update
 
   return;
 }

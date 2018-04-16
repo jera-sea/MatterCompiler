@@ -13,6 +13,7 @@
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
@@ -43,6 +44,8 @@ public:
     QSpinBox *intMaxCurrent;
     QLabel *label_4;
     QSpinBox *intMaxVoltage;
+    QDoubleSpinBox *dblVoltSec;
+    QLabel *label_7;
     QMenuBar *menuBar;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
@@ -136,6 +139,13 @@ public:
 
         gridLayout_2->addWidget(intMaxVoltage, 0, 1, 1, 1);
 
+        dblVoltSec = new QDoubleSpinBox(centralWidget);
+        dblVoltSec->setObjectName(QStringLiteral("dblVoltSec"));
+        dblVoltSec->setGeometry(QRect(460, 20, 101, 41));
+        label_7 = new QLabel(centralWidget);
+        label_7->setObjectName(QStringLiteral("label_7"));
+        label_7->setGeometry(QRect(320, 10, 152, 55));
+        label_7->setFont(font);
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
@@ -164,6 +174,7 @@ public:
         label_2->setText(QApplication::translate("MainWindow", "VOLTAGE MIN", 0));
         label_6->setText(QApplication::translate("MainWindow", "CURRENT MIN", 0));
         label_4->setText(QApplication::translate("MainWindow", "VOLTAGE MAX", 0));
+        label_7->setText(QApplication::translate("MainWindow", "Volts/Sec", 0));
     } // retranslateUi
 
 };

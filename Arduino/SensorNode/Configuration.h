@@ -65,6 +65,7 @@ float max_voltage=0;
 float min_voltage=0;
 float max_current=0;
 float min_current=0;
+float volt_sec=0;
 
 unsigned long current_time = 0;
 unsigned long previous_time = 0;

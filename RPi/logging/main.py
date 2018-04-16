@@ -26,7 +26,8 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         self.btnScanV.clicked.connect(lambda: self.scanVoltage())
         self.btnRun.clicked.connect(lambda: self.run())
         self.intMaxVoltage.valueChanged.connect(self.maxVchange)
-        
+        self.intMinVoltage.valueChanged.connect(self.minVchange)
+        self.dblVoltSec.valueChanged.connect(self.voltSecChange)
 
         
     ### functions for the buttons to call
@@ -37,6 +38,14 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         #send arduino voltage limits followed by SCANV command
         ser.write(b'MAXV:')
         out_str = str(max_v) + '\n'
+        ser.write(out_str.encode())
+        ser.write(b'\n')
+        ser.write(b'MINV:')
+        out_str = str(min_v) + '\n'
+        ser.write(out_str.encode())
+        ser.write(b'\n')
+        ser.write(b'VSEC:')
+        out_str = str(volt_sec) + '\n'
         ser.write(out_str.encode())
         ser.write(b'\n')
         ser.write(b'SCANV\n')
@@ -51,6 +60,18 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         max_v = self.intMaxVoltage.value()
         print ("Max voltage: ")
         print(max_v)
+        
+    def minVchange(self):
+        global min_v
+        min_v = self.intMinVoltage.value()
+        print ("Min voltage: ")
+        print(min_v)
+        
+    def voltSecChange(self):
+        global volt_sec
+        volt_sec = self.dblVoltSec.value()
+        print ("Min voltage: ")
+        print(volt_sec)
         
         
 def receive_data(log, serPort):
