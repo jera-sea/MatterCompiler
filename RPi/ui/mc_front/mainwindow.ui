@@ -46,7 +46,7 @@
      <string>SCAN</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnScanV_2">
+   <widget class="QPushButton" name="btnRun">
     <property name="geometry">
      <rect>
       <x>700</x>
@@ -64,7 +64,7 @@
      <string>RUN</string>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>700</x>
@@ -75,7 +75,7 @@
     </property>
     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
      <item row="1" column="1">
-      <widget class="QSpinBox" name="spinBox_2">
+      <widget class="QSpinBox" name="intMinVoltage">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -115,7 +115,7 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QSpinBox" name="spinBox_4">
+      <widget class="QSpinBox" name="intMinCurrent">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -140,7 +140,7 @@
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QSpinBox" name="spinBox_3">
+      <widget class="QSpinBox" name="intMaxCurrent">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -165,7 +165,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QSpinBox" name="spinBox">
+      <widget class="QSpinBox" name="intMaxVoltage">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>

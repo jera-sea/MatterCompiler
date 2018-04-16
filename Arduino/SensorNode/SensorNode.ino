@@ -53,8 +53,7 @@ void setup(void)
 
   VIdac.begin();
 
-  fwd_voltage_scan(30, 10, true);
-  //Serial.println("DS TEMP");
+  fwd_voltage_scan(1.0, true);
 }
 
 //=============================================================================================
@@ -117,6 +116,8 @@ void receive_command() {
   }
   if (command.substring(0, command.indexOf(":")) == "MAXV") { // maximum voltage for scan or polish followed by :<maximum_voltage>
     max_voltage = command.substring(command.indexOf(":") + 1).toFloat();
+    Serial.print("MAX VOLTAGE: ");
+    Serial.println(max_voltage);
   }
   if (command.substring(0, command.indexOf(":")) == "MINV") { // minimum voltage for scan or polish followed by :<minimum_voltage>
     min_voltage = command.substring(command.indexOf(":") + 1).toFloat();
@@ -154,13 +155,13 @@ void send_sample() {
 //                                   POWER CONTROL FUNCTIONS
 //=============================================================================================
 //=============================================================================================
-void fwd_voltage_scan(float scanRate, float target_v, boolean electrode) {
-  scan_limit = target_v;
+void fwd_voltage_scan(float scanRate, boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
+  scan_limit = max_voltage;
   scan_dir = true; //set scan direction positive
-  dacUp(0.0, 4000);
+  dacUp(min_voltage, 4000);
 
   if (electrode) { //outer electrode selected
-    volt_step = target_v / (scanRate * 500);
+    volt_step = scanRate / 500;
     startTimer(TC1, 1, TC4_IRQn, 500);
     //Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
   }
@@ -173,7 +174,7 @@ void scan_update() {
   //Serial.println("SCAN UPDATE"); Serial.println(scan_limit);
   float new_voltage = current_voltage + volt_step;
 
-  if (current_voltage >= scan_limit) {
+  if (current_voltage >= max_voltage) {
     scan_dir = false;
   }
   if (scan_dir) {
@@ -181,7 +182,7 @@ void scan_update() {
   }
   else {
     new_voltage = current_voltage - volt_step;
-    if (new_voltage < 0.0) {
+    if (new_voltage < min_voltage) {
       new_voltage = 0.0;
       scan_complete = true;
       //Serial.println("SCAN COMPLETE");
