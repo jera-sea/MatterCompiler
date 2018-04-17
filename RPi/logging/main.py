@@ -36,24 +36,28 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
      
     def scanVoltage(self):
         #send arduino voltage limits followed by SCANV command
-        ser.write(b'MAXV:')
-        out_str = str(max_v) + '\n'
-        ser.write(out_str.encode())
-        ser.write(b'\n')
-        ser.write(b'MINV:')
-        out_str = str(min_v) + '\n'
-        ser.write(out_str.encode())
-        ser.write(b'\n')
-        ser.write(b'VSEC:')
-        out_str = str(volt_sec) + '\n'
-        ser.write(out_str.encode())
-        ser.write(b'\n')
+        try:
+            ser.write(b'MAXV:')
+            out_str = str(max_v) + '\n'
+            ser.write(out_str.encode())
+            ser.write(b'\n')
+            ser.write(b'MINV:')
+            out_str = str(min_v) + '\n'
+            ser.write(out_str.encode())
+            ser.write(b'\n')
+            ser.write(b'VSEC:')
+            out_str = str(volt_sec) + '\n'
+            ser.write(out_str.encode())
+            ser.write(b'\n')
+        except:
+            print("SET PARAMETERS FIRST")
         ser.write(b'SCANV\n')
         
         print ("Performing Potentiondynamic scan")
         
     def run(self):
         print ("Starting Polishing ...")
+        os.system('python realtime_iv.py')
         
     def maxVchange(self):
         global max_v
