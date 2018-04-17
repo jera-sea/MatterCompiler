@@ -27,22 +27,24 @@ def init():
     try:
         con = sqlite3.connect('1.db') #connect to db as read only
     except:
-        return line,
+        return line_i, line_v
     with con:
         df = pd.read_sql_query("SELECT * FROM session_log", con)
 
         line_v.set_data(pd.to_datetime(df['time']), df['oe_voltage'].values)
         line_i.set_data(pd.to_datetime(df['time']), df['oe_current'].values)
-        ax.relim()
-        ax.autoscale_view()
-    return line,
+        ax1.relim()
+        ax1.autoscale_view()
+        ax2.relim()
+        ax2.autoscale_view()
+    return line_i, line_v
 
 # animation function.  This is called sequentially
 def animate(i):
     try:
         con = sqlite3.connect('1.db')
     except:
-        return line,
+        return line_i, line_v
     with con:
         #select last 100 lines from session_log table within the database
         sql = ('SELECT * '

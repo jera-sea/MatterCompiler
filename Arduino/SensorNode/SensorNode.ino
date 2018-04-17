@@ -100,6 +100,9 @@ void loop(void)
 
 //=============================================================================================
 //=============================================================================================
+//                                   SERIAL COMMUNICATIONS
+//=============================================================================================
+//=============================================================================================
 void receive_command() {
   String command = Serial.readStringUntil('\n');
 
@@ -153,6 +156,14 @@ void send_sample() {
 //=============================================================================================
 //=============================================================================================
 //                                   POWER CONTROL FUNCTIONS
+//=============================================================================================
+//=============================================================================================
+void run_process(float current, float total_charge){
+  
+  
+
+  return;
+}
 //=============================================================================================
 //=============================================================================================
 void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
@@ -229,7 +240,7 @@ void m1_switch(boolean state, boolean dir) {
     digitalWrite(m1dir, HIGH);
   }
 
-  //set pwm value and switch the sleep bit
+  //SLEEP MODE CONTROL AND PWM (ON OR OFF)
   if (state) {
     //Serial.println("Waking up and turning full on");
     digitalWrite(m1pwm, HIGH); //switch pwm first to make sure the outputs do what you want when awoken
@@ -246,7 +257,7 @@ void m1_switch(boolean state, boolean dir) {
 //=============================================================================================
 //=============================================================================================
 void m1_ground() {
-
+  
   digitalWrite(m1pwm, LOW); //set outputs to ground
   digitalWrite(m1slp, HIGH); //wake up
 
