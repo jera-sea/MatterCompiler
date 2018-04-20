@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Realtime_IV
+Comment=Realtime voltage and current graph
+Icon=/usr/share/pixmaps/openbox.xpm
+Exec=python /home/pi/Desktop/Code/RPi/logging/realtime_iv.py
+Path = /home/pi/Desktop/Code/RPi/logging/
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=None;

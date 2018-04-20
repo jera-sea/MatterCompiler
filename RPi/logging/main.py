@@ -84,9 +84,11 @@ def receive_data(log, serPort):
         if serPort.inWaiting() !=0:
             try:
                 in_serial = serPort.readline()
+                #timeNow = pd.Timestamp.now()
+                #print(in_serial)
                 #print(in_serial)
                 in_serial = str(serPort.readline()).split(":")
-            
+                #print(in_serial)
                 
                 log.loc[len(log.index)] = [float(in_serial[1]), 
                                             float(in_serial[2]), 
@@ -95,15 +97,14 @@ def receive_data(log, serPort):
                                             float(in_serial[5]), 
                                             float(in_serial[6]), 
                                             float(in_serial[7].strip("\\r\\n'")), 
-                                            pd.Timestamp.now()]
-                if(len(log)>3):
-                    time_diff = log.time[len(log)] - log.time[len(log)-1]
-                    log.total_charge[len(log)] = log.total_charge[len(log)-1] + log.oe_current.rolling(window = 2, center = False).mean()*time_diff.total_seconds()
+                                            float(in_serial[4]]
+
+                db.log_state("1.db", log.tail(1))
                     
             except:
-                print(in_serial)
+                print("ERROR")
             
-            db.log_state("1.db", log.tail(1))
+            
  
     
 # I feel better having one of these
@@ -163,7 +164,8 @@ def main():
     #OPEN SERIAL PORT
     try:
         global ser
-        ser = serial.Serial(port='COM6', baudrate=115200)
+        ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200)
+        #ser = serial.Serial(port='COM6', baudrate=115200)
         print ("Hardware Node Connected")
     except Exception as e:
         print(e)

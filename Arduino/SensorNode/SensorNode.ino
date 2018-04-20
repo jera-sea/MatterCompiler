@@ -282,9 +282,10 @@ void get_elec() {
   //loadvoltage
   oe_voltage = busvoltage + (shuntvoltage / 1000); //still need to subtract the lowside transistor here for pulse reverse
   oe_current = current_mA;
+  ie_current = millis();
 
 
-  /*
+  /*sta
     Serial.print("Bus Voltage:   "); Serial.print(busvoltage); Serial.println(" V");
     Serial.print("Shunt Voltage: "); Serial.print(shuntvoltage); Serial.println(" mV");
     Serial.print("Load Voltage:  "); Serial.print(loadvoltage); Serial.println(" V");
