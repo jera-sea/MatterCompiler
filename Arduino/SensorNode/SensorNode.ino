@@ -5,13 +5,13 @@
 #include "Configuration.h"
 #include <OneWire.h>
 
-
 Adafruit_INA219 ina219(0x41); //top side ina219
 OneWire  ds(2);  // on pin 19 (a 5k6 pullup is present)
 byte sealed_addr[8] = {0x28, 0xA0, 0xCC, 0xE0, 0x08, 0x00, 0x00, 0x2D};
 
 MCP492X VIdac(dac_cs);
 
+  //Create rolling average array
 
 //=============================================================================================
 //=============================================================================================
@@ -47,7 +47,8 @@ void setup(void)
 
   // Initialize the INA219.
   ina219.begin();
-  //Sensor Sample Rates
+
+  
 
   // m1_switch(on, AtoB);
 
@@ -61,19 +62,15 @@ void setup(void)
 //=============================================================================================
 void loop(void)
 {
-  current_time = millis();
-  if (current_time - previous_time > 1000) {
-    previous_time = current_time;
-    if (ds_flag) {
-      start_ds_conv();
-      ds_flag = false;
-    }
-    else {
-      get_ds_temp();
-      ds_flag = true;
-    }
+ //get DS18b20 temperatrue (or not depending on timer
+ //non time critical timed tasks:
+     current_time = millis();
+  if (current_time - previousDS_time > 1000) {
+    ds18();
   }
 
+
+  
   if (iv_sample) {
     iv_sample = false;
     get_elec(); //sample electrical parameters
@@ -131,6 +128,9 @@ void receive_command() {
   if (command.substring(0, command.indexOf(":")) == "VSEC") { // maximum voltage for scan or polish followed by :<maximum_current>
     volt_sec = command.substring(command.indexOf(":") + 1).toFloat();
   }
+   if (command.substring(0, command.indexOf(":")) == "RUN") { // maximum voltage for scan or polish followed by :<maximum_current>
+    run_process(max_current, command.substring(command.indexOf(":") + 1).toFloat());
+  }
   return;
 
 }
@@ -138,7 +138,7 @@ void send_sample() {
   Serial.print("data:");
   Serial.print(oe_voltage);
   Serial.print(":");
-  Serial.print(oe_current);
+  Serial.print(oe_current_s);
   Serial.print(":");
   Serial.print(ie_voltage);
   Serial.print(":");
@@ -159,8 +159,9 @@ void send_sample() {
 //=============================================================================================
 //=============================================================================================
 void run_process(float current, float total_charge){
-  
-  
+  dacUp(30, current);
+  charge_target = total_charge; //set total charge transfer
+  startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate set to 25Hz
 
   return;
 }
@@ -173,8 +174,7 @@ void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electr
 
   if (electrode) { //outer electrode selected
     volt_step = volt_sec / 100;
-    startTimer(TC1, 1, TC4_IRQn, 100);
-    //Serial.println("tc4 started, scanRate = "); Serial.println(volt_step);
+    startTimer(TC1, 1, TC4_IRQn, 100); //start scan with an update rate of 100hz
   }
   return;
 }
@@ -266,6 +266,22 @@ void m1_ground() {
 //=============================================================================================
 //                                Sensor Sampling
 //=============================================================================================
+void ds18(){
+
+    previousDS_time = current_time;
+    if (ds_flag) {
+      start_ds_conv();
+      ds_flag = false;
+    }
+    else {
+      get_ds_temp();
+      ds_flag = true;
+    }
+  return;
+}
+
+//=============================================================================================
+//=============================================================================================
 void get_elec() {
 
   float shuntvoltage = 0;
@@ -281,18 +297,26 @@ void get_elec() {
   power_mW = ina219.getPower_mW();
   //loadvoltage
   oe_voltage = busvoltage + (shuntvoltage / 1000); //still need to subtract the lowside transistor here for pulse reverse
-  oe_current = current_mA;
-  ie_current = millis();
+  current_time = millis();
+  
+  ie_current = float(current_time); //temporary timer transfer
+  oe_current_s = current_mA; //this is purely for realtiem logging
+  oe_current[cRollingCount] = current_mA;
+  cRollingCount++; //increment smoothing array position
 
+  if(cRollingCount == 10 ){ //if 10 samples have been accumulated
+    float smoothSum=0;
+    for(int i=0; i < (smoothLen-1); i++){
+      smoothSum+=oe_current[i];
+    }
+    
+    total_charge_transfer += ((smoothSum/smoothLen)/1000.0)*float(((current_time-previous_accumulation)/1000));//add charge trasnferred since last accumulation
+    previous_accumulation = current_time;
+    cRollingCount=0;
+    
+  }
+  
 
-  /*sta
-    Serial.print("Bus Voltage:   "); Serial.print(busvoltage); Serial.println(" V");
-    Serial.print("Shunt Voltage: "); Serial.print(shuntvoltage); Serial.println(" mV");
-    Serial.print("Load Voltage:  "); Serial.print(loadvoltage); Serial.println(" V");
-    Serial.print("Current:       "); Serial.print(current_mA); Serial.println(" mA");
-    Serial.print("Power:         "); Serial.print(power_mW); Serial.println(" mW");
-    Serial.println("");
-  */
 
   return;
 }

@@ -14,6 +14,8 @@
 #define ldac 42
 #define Vdac 0
 #define Idac 1
+
+#define smoothLen 10
 //=============================================================================================
 //                                      constants
 //=============================================================================================
@@ -47,12 +49,14 @@ boolean BtoA = false;
 
 //sense variables
 float oe_voltage = 3.2;
-float oe_current = 156.32;
+float oe_current[10];
+float oe_current_s=0;
 float ie_voltage = 2.1;
 float ie_current = 15.67;
 float surf_temp = 10.2;
 float el_flow = 3.2;
 float total_charge_transfer = 0.0; //dummy value this will be calculated on the pi side
+float charge_target = 0;
 
 //variables for potentiodynamic sweeps
 float volt_step = 0.0;
@@ -68,7 +72,11 @@ float min_current=0;
 float volt_sec=0;
 
 unsigned long current_time = 0;
-unsigned long previous_time = 0;
+unsigned long previousDS_time = 0;
+unsigned long previousSER_time = 0;
+unsigned long previous_accumulation=0;
+
+int cRollingCount = 0; //variable storing current smoothing array location
 
 volatile boolean l;
 

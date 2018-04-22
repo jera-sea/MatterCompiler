@@ -27,6 +27,7 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         self.btnRun.clicked.connect(lambda: self.run())
         self.intMaxVoltage.valueChanged.connect(self.maxVchange)
         self.intMinVoltage.valueChanged.connect(self.minVchange)
+        self.intMaxCurrent.valueChanged.connect(self.maxIchange)
         self.dblVoltSec.valueChanged.connect(self.voltSecChange)
 
         
@@ -57,7 +58,9 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         
     def run(self):
         print ("Starting Polishing ...")
-        os.system('python realtime_iv.py')
+        ser.write(b'RUN:')
+        out_str = str(max_i) + '\n'
+        ser.write(out_str.encode())
         
     def maxVchange(self):
         global max_v
@@ -76,9 +79,14 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         volt_sec = self.dblVoltSec.value()
         print ("Min voltage: ")
         print(volt_sec)
+    def maxIchange(self):
+        global max_i
+        max_i = self.intMaxCurrent.value()
+        print ("Max Current: ")
+        print(max_i)      
         
         
-def receive_data(log, serPort):
+def receive_data(log, serPort, datab):
       
     while True:
         if serPort.inWaiting() !=0:
@@ -97,9 +105,9 @@ def receive_data(log, serPort):
                                             float(in_serial[5]), 
                                             float(in_serial[6]), 
                                             float(in_serial[7].strip("\\r\\n'")), 
-                                            float(in_serial[4]]
+                                            float(in_serial[4])]
 
-                db.log_state("1.db", log.tail(1))
+                db.log_state(datab, log.tail(1))
                     
             except:
                 print("ERROR")
@@ -112,7 +120,7 @@ def main():
     #set session parameters which will later be passed from QT UI
     col_names = ["oe_voltage", "oe_current","ie_voltage", "ie_current", "surf_temp", "el_flow", "total_charge", "time"]
     
-    database ="1.db"
+    #database ="1.db"
     session_id = 1
     pulse_frequency = 2
     f_pulse_len = 200 #ms
@@ -132,7 +140,7 @@ def main():
     we_area = 17.165 #cm^2
     oce_area = 314.159
     ice_area = 6.597
-    
+    database = time.strftime("%Y%m%d-%H%M%S") + ".db" 
         
     #create new session log
     db.create_db(database, "session_data", "session_log")
@@ -164,8 +172,8 @@ def main():
     #OPEN SERIAL PORT
     try:
         global ser
-        ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200)
-        #ser = serial.Serial(port='COM6', baudrate=115200)
+        #ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200)
+        ser = serial.Serial(port='COM6', baudrate=115200)
         print ("Hardware Node Connected")
     except Exception as e:
         print(e)
@@ -178,7 +186,7 @@ def main():
 
 
     #seperate blocking thread which handles serial reception
-    thread = threading.Thread(target=receive_data, args=(log, ser))
+    thread = threading.Thread(target=receive_data, args=(log, ser, database))
     thread.start()
     
     sys.exit(app.exec_())
