@@ -79,4 +79,5 @@ unsigned long previous_accumulation=0;
 int cRollingCount = 0; //variable storing current smoothing array location
 
 volatile boolean l;
+boolean polishing = false;
 

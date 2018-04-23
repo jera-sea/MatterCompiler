@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import db_funcs as db
 import threading
+import scipy.constants
 
 # This is our window from QtCreator
 import mainwindow_auto
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         self.intMaxVoltage.valueChanged.connect(self.maxVchange)
         self.intMinVoltage.valueChanged.connect(self.minVchange)
         self.intMaxCurrent.valueChanged.connect(self.maxIchange)
+        self.intMilligrams.valueChanged.connect(self.massChange)
         self.dblVoltSec.valueChanged.connect(self.voltSecChange)
 
         
@@ -58,8 +60,21 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         
     def run(self):
         print ("Starting Polishing ...")
-        ser.write(b'RUN:')
         out_str = str(max_i) + '\n'
+        ser.write(b'MAXI:')
+        ser.write(out_str.encode())
+        # calculate total charge required to remove x grams of Ti and Ni
+        mass = mg/1000 #convert milligrams to g
+        #assume 1:1 Ti:Ni
+        TiMolMass = 47.867
+        NiMolMass = 58.693
+        #assume the oxidation reactions produce Ti2+ and Ni2+
+        TiCharge = (((mass/2)/TiMolMass)*scipy.constants.Avogadro*scipy.constants.e)*2
+        NiCharge = (((mass/2)/NiMolMass)*scipy.constants.Avogadro*scipy.constants.e)*2
+        TotCharge = TiCharge+NiCharge
+        print(TotCharge)
+        ser.write(b'RUN:')
+        out_str = str(round(TotCharge, 3)) + '\n'
         ser.write(out_str.encode())
         
     def maxVchange(self):
@@ -83,7 +98,12 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         global max_i
         max_i = self.intMaxCurrent.value()
         print ("Max Current: ")
-        print(max_i)      
+        print(max_i)
+    def massChange(self):
+        global mg
+        mg = self.intMilligrams.value()
+        print ("Mass to Transfer in mg: ")
+        print(mg)
         
         
 def receive_data(log, serPort, datab):

@@ -46,6 +46,8 @@ public:
     QSpinBox *intMaxVoltage;
     QDoubleSpinBox *dblVoltSec;
     QLabel *label_7;
+    QLabel *label_8;
+    QSpinBox *intMilligrams;
     QMenuBar *menuBar;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
@@ -141,11 +143,21 @@ public:
 
         dblVoltSec = new QDoubleSpinBox(centralWidget);
         dblVoltSec->setObjectName(QStringLiteral("dblVoltSec"));
-        dblVoltSec->setGeometry(QRect(460, 20, 101, 41));
+        dblVoltSec->setGeometry(QRect(440, 20, 151, 51));
         label_7 = new QLabel(centralWidget);
         label_7->setObjectName(QStringLiteral("label_7"));
-        label_7->setGeometry(QRect(320, 10, 152, 55));
+        label_7->setGeometry(QRect(330, 20, 152, 55));
         label_7->setFont(font);
+        label_8 = new QLabel(centralWidget);
+        label_8->setObjectName(QStringLiteral("label_8"));
+        label_8->setGeometry(QRect(270, 170, 161, 55));
+        label_8->setFont(font);
+        intMilligrams = new QSpinBox(centralWidget);
+        intMilligrams->setObjectName(QStringLiteral("intMilligrams"));
+        intMilligrams->setGeometry(QRect(440, 170, 151, 55));
+        sizePolicy.setHeightForWidth(intMilligrams->sizePolicy().hasHeightForWidth());
+        intMilligrams->setSizePolicy(sizePolicy);
+        intMilligrams->setMaximum(4000);
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
@@ -175,6 +187,7 @@ public:
         label_6->setText(QApplication::translate("MainWindow", "CURRENT MIN", 0));
         label_4->setText(QApplication::translate("MainWindow", "VOLTAGE MAX", 0));
         label_7->setText(QApplication::translate("MainWindow", "Volts/Sec", 0));
+        label_8->setText(QApplication::translate("MainWindow", "Milligrams to Transfer", 0));
     } // retranslateUi
 
 };

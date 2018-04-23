@@ -68,25 +68,35 @@ void loop(void)
   if (current_time - previousDS_time > 1000) {
     ds18();
   }
+  //log data by sending over serial to Pi 5 times per sec
+  if ((current_time - previousSER_time > 200) && polishing) {
+      send_sample();
+      previousSER_time=current_time;
+  }
 
-
-  
   if (iv_sample) {
     iv_sample = false;
     get_elec(); //sample electrical parameters
     set_flow();
-    send_sample();
   }
 
   if (output_update_flag && !scan_complete) {
     scan_update();
     //Serial.println(current_voltage);
   }
+  
 
   if(Serial.available()){
     receive_command();
   }
 
+  if(charge_target<=total_charge_transfer && polishing){
+    stopTimer(TC3_IRQn); //stop the sampling
+    dacUp(0, 0);//switch off the supply
+    polishing = false;
+    total_charge_transfer=0;
+    
+  }
 
   //delay(2000);
   //send_sample();
@@ -130,6 +140,7 @@ void receive_command() {
   }
    if (command.substring(0, command.indexOf(":")) == "RUN") { // maximum voltage for scan or polish followed by :<maximum_current>
     run_process(max_current, command.substring(command.indexOf(":") + 1).toFloat());
+    startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is serial send timer and sensor sample rate set to 50Hz
   }
   return;
 
@@ -161,8 +172,8 @@ void send_sample() {
 void run_process(float current, float total_charge){
   dacUp(30, current);
   charge_target = total_charge; //set total charge transfer
-  startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate set to 25Hz
-
+  previous_accumulation = millis();
+  polishing = true;
   return;
 }
 //=============================================================================================
@@ -170,6 +181,7 @@ void run_process(float current, float total_charge){
 void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
   scan_limit = max_voltage;
   scan_dir = true; //set scan direction positive
+  polishing = true;
   dacUp(min_voltage, 4000);
 
   if (electrode) { //outer electrode selected
@@ -196,6 +208,7 @@ void scan_update() {
     if (new_voltage < min_voltage) {
       new_voltage = 0.0;
       scan_complete = true;
+      polishing = false;
       //Serial.println("SCAN COMPLETE");
       stopTimer(TC4_IRQn); //stop scan update timer
       stopTimer(TC3_IRQn); //stop serial/sensor update timer
@@ -212,7 +225,15 @@ void dacUp(float voltage, int current) {
   current_voltage = voltage;
   current_current = current;
   unsigned int v_dig = int(round(voltage * v_factor));
-  unsigned int i_dig = map(current, 0, 5000, 4055, 0);//int(round(current*i_factor));
+  float VLim = 4.75-(13750)*(float(current)/1000.0)/15000.0; //multiply by 10 000 to get a a large int value we can use in the arduino map function
+  //Serial.println(VLim);
+  VLim = VLim/1.181;
+    //Serial.println(VLim);
+  unsigned int i_dig = int((VLim/4.096)*4095.0);
+
+  //unsigned int i_dig = map(int(VLim), 0, 40960, 0, 4095);//int(round(current*i_factor));
+  //Serial.println("AKSHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHF");
+  //Serial.println(i_dig);
   //Serial.println(v_dig);
   //Serial.println(i_dig);
 
@@ -309,8 +330,9 @@ void get_elec() {
     for(int i=0; i < (smoothLen-1); i++){
       smoothSum+=oe_current[i];
     }
-    
-    total_charge_transfer += ((smoothSum/smoothLen)/1000.0)*float(((current_time-previous_accumulation)/1000));//add charge trasnferred since last accumulation
+
+    //Serial.println(smoothSum/smoothLen);
+    total_charge_transfer += ((smoothSum/1000.0)/smoothLen)*float((current_time-previous_accumulation)/1000.0);//add charge trasnferred since last accumulation
     previous_accumulation = current_time;
     cRollingCount=0;
     
