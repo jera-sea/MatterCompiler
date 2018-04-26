@@ -68,29 +68,31 @@ void loop(void)
   if (current_time - previousDS_time > 1000) {
     ds18();
   }
-  //log data by sending over serial to Pi 5 times per sec
-  if ((current_time - previousSER_time > 200) && polishing) {
+  //log data by sending over serial to Pi 5 times per sec when running polishing
+  if ((current_time - previousSER_time >= log_rate) && (polishing || scanning)) {
       send_sample();
       previousSER_time=current_time;
   }
 
   if (iv_sample) {
+    //Serial.println("SAMPLING");
     iv_sample = false;
     get_elec(); //sample electrical parameters
     set_flow();
   }
 
-  if (output_update_flag && !scan_complete) {
+  if (output_update_flag && scanning) {
+    //Serial.println("SCAN UPDATE");
     scan_update();
     //Serial.println(current_voltage);
   }
   
-
   if(Serial.available()){
     receive_command();
   }
 
   if(charge_target<=total_charge_transfer && polishing){
+    //Serial.println("CHARGE LIMIT REACHED");
     stopTimer(TC3_IRQn); //stop the sampling
     dacUp(0, 0);//switch off the supply
     polishing = false;
@@ -114,13 +116,16 @@ void receive_command() {
   String command = Serial.readStringUntil('\n');
 
   if (command.substring(0, command.indexOf(":")) == "SCANV") { //Start a voltage scan
-    Serial.println("STARTING");
-    scan_complete = false; //initiate scan
+    Serial.println("STARTING VOLTAGE SCAN");
+    scanning = true; //initiate scan
+    session_start_time=millis();
     fwd_voltage_scan(true);
-    startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate
+    startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is sensor sample rate
+    log_rate = 50;
   }
   if (command.substring(0, command.indexOf(":")) == "SCANI") { //start a current scan
-    scan_complete = false; //initiate scan
+    session_start_time = millis();
+    scanning = true; //initiate scan
     startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate
   }
   if (command.substring(0, command.indexOf(":")) == "MAXV") { // maximum voltage for scan or polish followed by :<maximum_voltage>
@@ -140,7 +145,9 @@ void receive_command() {
   }
    if (command.substring(0, command.indexOf(":")) == "RUN") { // maximum voltage for scan or polish followed by :<maximum_current>
     run_process(max_current, command.substring(command.indexOf(":") + 1).toFloat());
+    session_start_time = millis();
     startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is serial send timer and sensor sample rate set to 50Hz
+    log_rate = 200;
   }
   return;
 
@@ -159,7 +166,9 @@ void send_sample() {
   Serial.print(":");
   Serial.print(el_flow);
   Serial.print(":");
-  Serial.println(total_charge_transfer);
+  Serial.print(total_charge_transfer);
+  Serial.print(":");
+  Serial.println(sample_time);
 
   return;
 }
@@ -173,6 +182,8 @@ void run_process(float current, float total_charge){
   dacUp(30, current);
   charge_target = total_charge; //set total charge transfer
   previous_accumulation = millis();
+  Serial.println("STARTING POLISH CYCLE, CHARGE LIMIT - ");
+  Serial.println(charge_target);
   polishing = true;
   return;
 }
@@ -181,7 +192,6 @@ void run_process(float current, float total_charge){
 void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
   scan_limit = max_voltage;
   scan_dir = true; //set scan direction positive
-  polishing = true;
   dacUp(min_voltage, 4000);
 
   if (electrode) { //outer electrode selected
@@ -207,8 +217,7 @@ void scan_update() {
     new_voltage = current_voltage - volt_step;
     if (new_voltage < min_voltage) {
       new_voltage = 0.0;
-      scan_complete = true;
-      polishing = false;
+      scanning = false;
       //Serial.println("SCAN COMPLETE");
       stopTimer(TC4_IRQn); //stop scan update timer
       stopTimer(TC3_IRQn); //stop serial/sensor update timer
@@ -318,9 +327,7 @@ void get_elec() {
   power_mW = ina219.getPower_mW();
   //loadvoltage
   oe_voltage = busvoltage + (shuntvoltage / 1000); //still need to subtract the lowside transistor here for pulse reverse
-  current_time = millis();
-  
-  ie_current = float(current_time); //temporary timer transfer
+  sample_time = millis()-session_start_time;
   oe_current_s = current_mA; //this is purely for realtiem logging
   oe_current[cRollingCount] = current_mA;
   cRollingCount++; //increment smoothing array position
@@ -331,7 +338,6 @@ void get_elec() {
       smoothSum+=oe_current[i];
     }
 
-    //Serial.println(smoothSum/smoothLen);
     total_charge_transfer += ((smoothSum/1000.0)/smoothLen)*float((current_time-previous_accumulation)/1000.0);//add charge trasnferred since last accumulation
     previous_accumulation = current_time;
     cRollingCount=0;

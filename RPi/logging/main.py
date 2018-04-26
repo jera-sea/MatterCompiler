@@ -124,8 +124,8 @@ def receive_data(log, serPort, datab):
                                             float(in_serial[4]), 
                                             float(in_serial[5]), 
                                             float(in_serial[6]), 
-                                            float(in_serial[7].strip("\\r\\n'")), 
-                                            float(in_serial[4])]
+                                            float(in_serial[7]), 
+                                            float(in_serial[8].strip("\\r\\n'"))]
 
                 db.log_state(datab, log.tail(1))
                     

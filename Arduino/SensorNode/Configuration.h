@@ -27,7 +27,7 @@
 //=============================================================================================
 volatile boolean iv_sample = false;
 volatile boolean output_update_flag = false;
-boolean scan_complete = true; //flipped to false to initiate a scan flipped to tru when scan complete
+boolean scanning = false;
 boolean scan_dir = true;
 boolean ds_flag = true;
 
@@ -75,6 +75,9 @@ unsigned long current_time = 0;
 unsigned long previousDS_time = 0;
 unsigned long previousSER_time = 0;
 unsigned long previous_accumulation=0;
+unsigned long sample_time=0;
+unsigned long session_start_time=0;
+int log_rate = 200;
 
 int cRollingCount = 0; //variable storing current smoothing array location
 
