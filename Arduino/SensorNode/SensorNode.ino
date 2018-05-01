@@ -69,7 +69,7 @@ void loop(void)
     ds18();
   }
   //log data by sending over serial to Pi 5 times per sec when running polishing
-  if ((current_time - previousSER_time >= log_rate) && (polishing || scanning)) {
+  if ((current_time - previousSER_time > log_rate) && (polishing || scanning)) {
       send_sample();
       previousSER_time=current_time;
   }
@@ -122,7 +122,7 @@ void receive_command() {
     session_start_time=millis();
     fwd_voltage_scan(true);
     startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is sensor sample rate
-    log_rate = 50;
+    log_rate = 200;
   }
   if (command.substring(0, command.indexOf(":")) == "SCANI") { //start a current scan
     session_start_time = millis();
@@ -339,8 +339,8 @@ void get_elec() {
       smoothSum+=oe_current[i];
     }
 
-    total_charge_transfer += ((smoothSum/1000.0)/smoothLen)*float((current_time-previous_accumulation)/1000.0);//add charge trasnferred since last accumulation
-    previous_accumulation = current_time;
+    total_charge_transfer += ((smoothSum/1000.0)/smoothLen)*float((sample_time-previous_accumulation)/1000.0);//add charge trasnferred since last accumulation
+    previous_accumulation = sample_time;
     cRollingCount=0;
     
   }

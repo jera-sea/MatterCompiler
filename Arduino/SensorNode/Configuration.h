@@ -81,7 +81,7 @@ unsigned long previousSER_time = 0;
 unsigned long previous_accumulation=0;
 unsigned long sample_time=0;
 unsigned long session_start_time=0;
-int log_rate = 200;
+unsigned long log_rate = 250;
 
 int cRollingCount = 0; //variable storing current smoothing array location
 
