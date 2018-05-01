@@ -12,8 +12,12 @@
 #define m2pwm 10
 #define dac_cs 44
 #define ldac 42
-#define Vdac 0
-#define Idac 1
+//high 548 
+//#define Vdac 0
+//#define Idac 1
+//low 547
+#define Vdac 1
+#define Idac 0
 
 #define smoothLen 10
 //=============================================================================================

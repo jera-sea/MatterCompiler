@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import *
 import sys, time, serial, datetime
 import numpy as np
 import pandas as pd
-import db_funcs as db
 import threading
 import scipy.constants
+import db_funcs as db
+import graphing as gp
 
 # This is our window from QtCreator
 import mainwindow_auto
@@ -26,6 +27,8 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         self.btnNewSession.clicked.connect(lambda: self.newDB())
         self.btnScanV.clicked.connect(lambda: self.scanVoltage())
         self.btnRun.clicked.connect(lambda: self.run())
+        self.btnGraphVIT.clicked.connect(lambda: self.GraphVIT())
+        self.btnGraphVI.clicked.connect(lambda: self.GraphVI())
         self.intMaxVoltage.valueChanged.connect(self.maxVchange)
         self.intMinVoltage.valueChanged.connect(self.minVchange)
         self.intMaxCurrent.valueChanged.connect(self.maxIchange)
@@ -104,18 +107,25 @@ class MainWindow(QMainWindow, mainwindow_auto.Ui_MainWindow):
         mg = self.intMilligrams.value()
         print ("Mass to Transfer in mg: ")
         print(mg)
+    def GraphVI(self):
+        gp.graphVvsI(database)
+        #thread = threading.Thread(target=gp.graphVvsI, args=(database,))
+        #thread.start()
+    def GraphVIT(self):
+        print("graphing")
         
         
-def receive_data(log, serPort, datab):
-      
+        
+def receive_data(datab):
+    global log
     while True:
-        if serPort.inWaiting() !=0:
+        if ser.inWaiting() !=0:
             try:
-                in_serial = serPort.readline()
+                in_serial = ser.readline()
                 #timeNow = pd.Timestamp.now()
                 #print(in_serial)
                 #print(in_serial)
-                in_serial = str(serPort.readline()).split(":")
+                in_serial = str(ser.readline()).split(":")
                 #print(in_serial)
                 
                 log.loc[len(log.index)] = [float(in_serial[1]), 
@@ -132,9 +142,6 @@ def receive_data(log, serPort, datab):
             except:
                 print("ERROR")
             
-            
- 
-    
 # I feel better having one of these
 def main():
     #set session parameters which will later be passed from QT UI
@@ -160,6 +167,7 @@ def main():
     we_area = 17.165 #cm^2
     oce_area = 314.159
     ice_area = 6.597
+    global database
     database = time.strftime("%Y%m%d-%H%M%S") + ".db" 
         
     #create new session log
@@ -185,6 +193,7 @@ def main():
                  oce_area,
                  ice_area)
     #create pandas dataframe to receive serial data and plot it
+    global log
     log = pd.DataFrame(columns = col_names)
 
 
@@ -201,17 +210,14 @@ def main():
     app = QApplication(sys.argv)
     form = MainWindow()
     form.show()
-     # without this, the script exits immediately.
-    #sys.exit(app.exec_())
-
 
     #seperate blocking thread which handles serial reception
-    thread = threading.Thread(target=receive_data, args=(log, ser, database))
+    thread = threading.Thread(target=receive_data, args=(database,))
     thread.start()
     
+    # without this, the script exits immediately.
     sys.exit(app.exec_())
 
- 
 # python bit to figure how who started This
 if __name__ == "__main__":
     main()

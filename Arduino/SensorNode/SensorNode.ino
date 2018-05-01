@@ -91,6 +91,7 @@ void loop(void)
     receive_command();
   }
 
+  //if charge target has been reached stop the polishing
   if(charge_target<=total_charge_transfer && polishing){
     //Serial.println("CHARGE LIMIT REACHED");
     stopTimer(TC3_IRQn); //stop the sampling
@@ -192,7 +193,7 @@ void run_process(float current, float total_charge){
 void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
   scan_limit = max_voltage;
   scan_dir = true; //set scan direction positive
-  dacUp(min_voltage, 4000);
+  dacUp(min_voltage, 500);
 
   if (electrode) { //outer electrode selected
     volt_step = volt_sec / 100;
@@ -211,7 +212,7 @@ void scan_update() {
     scan_dir = false;
   }
   if (scan_dir) {
-    dacUp(new_voltage, 4000); //increase output voltage
+    dacUp(new_voltage, 500); //increase output voltage
   }
   else {
     new_voltage = current_voltage - volt_step;
@@ -222,7 +223,7 @@ void scan_update() {
       stopTimer(TC4_IRQn); //stop scan update timer
       stopTimer(TC3_IRQn); //stop serial/sensor update timer
     }
-    dacUp(new_voltage, 4000); //decrease output voltage
+    dacUp(new_voltage, 500); //decrease output voltage
   }
 
   return;
@@ -234,10 +235,10 @@ void dacUp(float voltage, int current) {
   current_voltage = voltage;
   current_current = current;
   unsigned int v_dig = int(round(voltage * v_factor));
-  float VLim = 4.75-(13750)*(float(current)/1000.0)/15000.0; //multiply by 10 000 to get a a large int value we can use in the arduino map function
-  //Serial.println(VLim);
-  VLim = VLim/1.181;
-    //Serial.println(VLim);
+  //float VLim = 4.75-(13750)*(float(current)/1000.0)/15000.0;
+  //VLim = VLim/1.181;
+  float VLim = 4.75-31600.0*(float(current)/1000.0)/5000.0;
+  
   unsigned int i_dig = int((VLim/4.096)*4095.0);
 
   //unsigned int i_dig = map(int(VLim), 0, 40960, 0, 4095);//int(round(current*i_factor));
@@ -251,7 +252,7 @@ void dacUp(float voltage, int current) {
   VIdac.analogWrite(Idac, 0, 0, 1, i_dig);
   digitalWrite(ldac, LOW);
   delay(2);
-  digitalWrite(ldac, HIGH); //synchrinous update
+  digitalWrite(ldac, HIGH); //synchronous update
 
   return;
 }
