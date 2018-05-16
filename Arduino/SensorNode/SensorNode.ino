@@ -100,12 +100,31 @@ void loop(void)
     total_charge_transfer=0;
     
   }
+//=============================================================================================
+//                                   Pulse state machine
+//=============================================================================================
+}
+void stateMachine(){
+  stateChange=false;
+  
+  switch(matterState){
+    case 0: //forward pulse
+      //set dac
+      //apply power
+      break;
+    case 1: //waiting period forward->reverse
+      //remove power
+      break;
+    case 2: //reverse pulse
+      //set dac
+      //apply power
+      break;
+    case 3: //waiting period reverse->forward
+      //remove power
+      break;
+  }
 
-  //delay(2000);
-  //send_sample();
-  // m1_ground();
-  //m1_switch(off, AtoB);
-
+  
 }
 
 //=============================================================================================

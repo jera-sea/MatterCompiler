@@ -73,7 +73,15 @@ float max_voltage=0;
 float min_voltage=0;
 float max_current=0;
 float min_current=0;
-float volt_sec=0;
+float volt_sec=0; //rate of change of voltage during a forward voltage scan in V/s
+float fwd_wait =0; //wait time in ms between forward and reverse pulses
+float rev_wait=0; //wait time in ms between reverse and forward pulse
+float fwd_pulse=0; //forward pulse duration
+float rev_pulse=0; //reverse pulse duration
+
+byte matterState=0;
+boolean stateChange = false;
+
 
 unsigned long current_time = 0;
 unsigned long previousDS_time = 0;
