@@ -16,8 +16,8 @@
 //#define Vdac 0
 //#define Idac 1
 //low 547
-#define Vdac 1
-#define Idac 0
+#define Vdac 0 //1 for low current 0 for high current REMEMBER
+#define Idac 1 //opposite of Vdac
 
 #define smoothLen 10
 //=============================================================================================
@@ -52,7 +52,7 @@ boolean BtoA = false;
 
 
 //sense variables
-float oe_voltage = 3.2;
+float oe_voltage = 0.0;
 float oe_current[10];
 float oe_current_s=0;
 float ie_voltage = 2.1;
@@ -79,8 +79,8 @@ float rev_wait=0; //wait time in ms between reverse and forward pulse
 float fwd_pulse=0; //forward pulse duration
 float rev_pulse=0; //reverse pulse duration
 
-byte matterState=0;
-boolean stateChange = false;
+volatile byte matterState=0;
+volatile boolean stateChange = false;
 
 
 unsigned long current_time = 0;

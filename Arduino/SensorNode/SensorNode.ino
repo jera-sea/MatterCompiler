@@ -104,22 +104,28 @@ void loop(void)
 //                                   Pulse state machine
 //=============================================================================================
 }
-void stateMachine(){
+void state_machine(){
   stateChange=false;
   
+  if(matterState>=4){matterState=0;}//rollover and continue from 0
+ 
   switch(matterState){
     case 0: //forward pulse
+      state_duration(fwd_pulse);
       //set dac
       //apply power
       break;
     case 1: //waiting period forward->reverse
+    state_duration(fwd_wait);
       //remove power
       break;
     case 2: //reverse pulse
+    state_duration(rev_pulse);
       //set dac
       //apply power
       break;
     case 3: //waiting period reverse->forward
+    state_duration(rev_wait);
       //remove power
       break;
   }
@@ -231,7 +237,7 @@ void scan_update() {
     scan_dir = false;
   }
   if (scan_dir) {
-    dacUp(new_voltage, 500); //increase output voltage
+    dacUp(new_voltage, 2000); //increase output voltage
   }
   else {
     new_voltage = current_voltage - volt_step;
@@ -242,7 +248,7 @@ void scan_update() {
       stopTimer(TC4_IRQn); //stop scan update timer
       stopTimer(TC3_IRQn); //stop serial/sensor update timer
     }
-    dacUp(new_voltage, 500); //decrease output voltage
+    dacUp(new_voltage, 2000); //decrease output voltage
   }
 
   return;
@@ -254,9 +260,9 @@ void dacUp(float voltage, int current) {
   current_voltage = voltage;
   current_current = current;
   unsigned int v_dig = int(round(voltage * v_factor));
-  //float VLim = 4.75-(13750)*(float(current)/1000.0)/15000.0;
-  //VLim = VLim/1.181;
-  float VLim = 4.75-31600.0*(float(current)/1000.0)/5000.0;
+  float VLim = 4.75-13750.0*(float(current)/1000.0)/15000.0;
+  VLim = VLim/1.181; //correct for amplifier gain to obtain 4.75V-(0A) (close to 5V rail).
+  //float VLim = 4.75-31600.0*(float(current)/1000.0)/5000.0;
   
   unsigned int i_dig = int((VLim/4.096)*4095.0);
 
@@ -370,6 +376,7 @@ void get_elec() {
 }
 
 //=============================================================================================
+//start_ds_conv written by nameless open cource coder
 //=============================================================================================
 void start_ds_conv() {
   ds.reset();
@@ -449,6 +456,25 @@ void TC4_Handler()
   return;
 }
 //=============================================================================================
+//state_duration sets TC5 to rollover after given number of microseconds (around 1 usec accuracy)
+//=============================================================================================
+void state_duration(float u_sec){
+  uint32_t freq = int(1000000.0/u_sec);
+  startTimer(TC1, 2, TC5_IRQn, freq); //TC1 channel 2, is pulse state duration timer
+  
+}
+//=============================================================================================
+//=============================================================================================
+void TC5_Handler()
+{
+  TC_GetStatus(TC1, 1);
+  matterState+=1;
+  stateChange=true;
+
+  return;
+}
+//=============================================================================================
+//startTimer and stopTimer functions written by nameless open source codera
 //=============================================================================================
 void startTimer(Tc *tc, uint32_t channel, IRQn_Type irq, uint32_t frequency) {
   pmc_set_writeprotect(false);
