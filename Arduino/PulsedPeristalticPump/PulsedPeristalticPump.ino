@@ -34,18 +34,19 @@ Serial.println("RUNNING ONE ROTATION");
 pinMode(EN, OUTPUT);
 pinMode(DIR, OUTPUT);
 pinMode(PULSE, OUTPUT);
-//pinMode(HALL, INPUT_PULLUP); //open collector hall effect switch (N/O switch to gnd)
+pinMode(HALL, INPUT_PULLUP); //open collector hall effect switch (N/O switch to gnd)
 
 digitalWrite(EN, LOW);
 digitalWrite(DIR, LOW);
 
 lcd.begin(16, 2);               // start the library
 
-
-
 }
 //================================================================================================
 void loop() {
+  if(digitalRead(HALL)==LOW){
+    Serial.println("TRIGGER");
+  }
 
   delay(100);
       if(millis() - lcdTim > 200){         // output a temperature value per 500ms 
@@ -109,6 +110,33 @@ void loop() {
 }
 
 //================================================================================================
+void one_pulse(){
+/*  if(rpm>50){
+    int temp_rpm = rpm;
+    Timer1.initialize(int((150000.0/float(50))/8.0)); // 60mil/(rpm*stepsPerRev)
+    Timer1.attachInterrupt(step_isr);
+    while(rpm<temp_rpm){
+      rpm = rpm+1;
+      Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
+      delay(5);
+    }
+  }*/
+    if(rpm==0 || rpm>50){
+    return;
+  }
+
+  Timer1.attachInterrupt(step_isr);
+  while(digitalRead(HALL)==HIGH){
+    
+  }
+  while(digitalRead(HALL)==LOW){
+    
+  }
+Timer1.detachInterrupt();
+
+  return;
+}
+//==============================================================================
 int read_LCD_buttons(){               // read the buttons
     adc_key_in = analogRead(0);       // read the value from the sensor 
 
@@ -138,18 +166,20 @@ int read_LCD_buttons(){               // read the buttons
 }
 //============================================================================
 void rpmUp(){
-Timer1.initialize(int(150000.0/float(rpm))); // 60mil/(rpm*stepsPerRev)
+Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
 
 }
 //============================================================================
 void rpmDown(){
-Timer1.initialize(int(150000.0/float(rpm))); //60mil/(rpm*stepsPerRev)
+Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
+
 }
 //============================================================================
 void rpmStart(){
 
-  Timer1.initialize(int(150000.0/float(rpm))); // 60mil/(rpm*stepsPerRev)
-  Timer1.attachInterrupt(step_isr);
+Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
+  one_pulse();
+  //Timer1.attachInterrupt(step_isr);
 
 }
 //============================================================================
