@@ -25,6 +25,7 @@ unsigned long lcdTim=0;
 unsigned long pulseWidth=100000;
 int rpm = 0;
 int steprate =1000;
+boolean pFlag = false;
 
 //================================================================================================
 void setup() {
@@ -43,11 +44,7 @@ lcd.begin(16, 2);               // start the library
 
 }
 //================================================================================================
-void loop() {
-  if(digitalRead(HALL)==LOW){
-    Serial.println("TRIGGER");
-  }
-
+void loop(){
   delay(100);
       if(millis() - lcdTim > 200){         // output a temperature value per 500ms 
              lcdTim = millis();
@@ -57,6 +54,14 @@ void loop() {
              lcd.print(rpm);             
              lcd.print(" rpm");              
      } 
+     if(analogRead(A5)>=500 && !pFlag){
+        rpmStart();
+        pFlag=true;
+     }
+      if(analogRead(A5)<=150){
+        rpmStart();
+        pFlag=false;
+     }
      
    lcd_key = read_LCD_buttons();   // read the buttons
    switch (lcd_key){               // depending on which button was pushed, we perform an action
