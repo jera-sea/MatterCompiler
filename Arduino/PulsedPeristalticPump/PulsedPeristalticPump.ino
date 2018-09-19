@@ -15,6 +15,7 @@
 #define btnSELECT 4
 #define btnNONE   5
 
+#define anIn A5
 
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);        // select the pins used on the LCD panel
 
@@ -54,12 +55,15 @@ void loop(){
              lcd.print(rpm);             
              lcd.print(" rpm");              
      } 
-     if(analogRead(A5)>=500 && !pFlag){
-        rpmStart();
+     Serial.println(analogRead(A5));
+     if(analogRead(A5)>=300 && !pFlag){
+      Serial.println("triggered");
+        single_pulse();
         pFlag=true;
      }
       if(analogRead(A5)<=150){
-        rpmStart();
+        Serial.println("triggered LOW");
+        //single_pulse();
         pFlag=false;
      }
      
@@ -182,10 +186,15 @@ Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
 //============================================================================
 void rpmStart(){
 
-Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
-  one_pulse();
-  //Timer1.attachInterrupt(step_isr);
+  Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
+  Timer1.attachInterrupt(step_isr);
 
+}
+//============================================================================
+void single_pulse(){
+  Timer1.initialize(int((150000.0/float(rpm))/8.0)); // 60mil/(rpm*stepsPerRev)
+  one_pulse();
+  return;
 }
 //============================================================================
 void rpmStop(){
