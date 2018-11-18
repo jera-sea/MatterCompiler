@@ -32,7 +32,7 @@ void setup(void)
 
   VIdac.begin();
   delay(5);
-  startTimer(TC1, 0, TC3_IRQn, 100000); //TC1 channel 0, is sensor sample rate
+  startTimer(TC1, 0, TC3_IRQn, 1000); //TC1 channel 0, is sensor sample rate
 
   VIdac.analogWrite(0, 0, 0, 1, 0);
   VIdac.analogWrite(1, 0, 0, 1, 2000);
@@ -61,13 +61,20 @@ void loop(void)
 //=============================================================================================
 void pulse_update() {
   //Serial.println("update");
-  VIdac.analogWrite(0, 0, 0, 1, waveformsTable[0][wavePos]);
+  //VIdac.analogWrite(0, 0, 0, 1, waveformsTable[3][wavePos]);
+ if(on){
+  VIdac.analogWrite(0, 0, 0, 1, 2333);
+  on=false;
+ }
+ else{
+  VIdac.analogWrite(0, 0, 0, 1, 1667);
+  on=true;
+ }
   digitalWrite(ldac, LOW);
-  delayMicroseconds(2);
   digitalWrite(ldac, HIGH); //synchronous update
-  wavePos++;
-  if(wavePos == maxSamplesNum){  // Reset the counter to repeat the wave
-    wavePos = 0;}
+  //wavePos++;
+  //if(wavePos == maxSamplesNum){  // Reset the counter to repeat the wave
+  //  wavePos = 0;}
   return;
 }
 //=============================================================================================

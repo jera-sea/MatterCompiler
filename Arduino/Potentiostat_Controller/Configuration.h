@@ -31,9 +31,7 @@ boolean ds_flag = true;
 //=============================================================================================
 
 boolean on = true;
-boolean off = false;
-boolean AtoB = true;
-boolean BtoA = false;
+
 boolean waveUpdate = false;
 
 //=============================================================================================
