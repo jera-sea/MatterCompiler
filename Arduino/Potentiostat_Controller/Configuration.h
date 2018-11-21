@@ -18,11 +18,10 @@
 //=============================================================================================
 //                                      Flags
 //=============================================================================================
-volatile boolean iv_sample = false;
-volatile boolean output_update_flag = false;
+volatile boolean sampleFlag = false;
+volatile boolean waveUpdate = false;
 boolean scanning = false;
-boolean scan_dir = true;
-boolean ds_flag = true;
+
 
 
 
@@ -31,28 +30,15 @@ boolean ds_flag = true;
 //=============================================================================================
 
 boolean on = true;
-
-boolean waveUpdate = false;
-
+boolean v_lim = true;
+//=============================================================================================
+//                                      Array Variables
+//=============================================================================================
+int rolling_avg[10];
 //=============================================================================================
 //                                      Global Variables
 //=============================================================================================
-
-
-//sense variables
-float oe_voltage = 0.0;
-float oe_current[10];
-float oe_current_s=0;
-float ie_voltage = 2.1;
-float ie_current = 15.67;
-float surf_temp = 10.2;
-float el_flow = 3.2;
-float total_charge_transfer = 0.0; //dummy value this will be calculated on the pi side
-float charge_target = 0;
-
-//variables for potentiodynamic sweeps
-float volt_step = 0.0;
-float scan_limit = 0.0;
+float current_i=0;
 
 //power control variables
 float current_voltage = 0.0; // this is the output voltage of the OPA regulator not the cell voltage
@@ -72,17 +58,12 @@ volatile boolean stateChange = false;
 
 
 unsigned long current_time = 0;
-unsigned long previousDS_time = 0;
 unsigned long previousSER_time = 0;
 unsigned long previous_accumulation=0;
 unsigned long sample_time=0;
-unsigned long session_start_time=0;
-unsigned long log_rate = 250;
 
 int cRollingCount = 0; //variable storing current smoothing array location
 
 int wavePos = 0;
 
 volatile boolean l;
-boolean polishing = false;
-

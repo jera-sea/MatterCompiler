@@ -1,14 +1,19 @@
 #include <SPI.h>
 #include <MCP492X.h>
 #include <Wire.h>
-#include <Adafruit_INA219.h>
 #include "Configuration.h"
-#include <OneWire.h>
 #include "Waveforms.h"
 
 MCP492X VIdac(dac_cs);
 
-  //
+  /*1.42 = -0.5V
+   * 1.58 = 0.5V
+   * centred around 1.5V
+   * formula
+   * (Ain - 1.5)/0.16
+   * 
+   *
+   */
 
 //=============================================================================================
 //=============================================================================================
@@ -18,8 +23,9 @@ MCP492X VIdac(dac_cs);
 
 void setup(void)
 {
-
+  analogReadResolution(12);
   pinMode(ldac, OUTPUT);
+  pinMode(A7, INPUT);
 
   //put the outputs to sleep and set PWM off to begin with
 
@@ -32,13 +38,15 @@ void setup(void)
 
   VIdac.begin();
   delay(5);
-  startTimer(TC1, 0, TC3_IRQn, 1000); //TC1 channel 0, is sensor sample rate
+  startTimer(TC1, 0, TC3_IRQn, 1000); //TC1 channel 0, is update rate
+  startTimer(TC1, 1, TC4_IRQn, 2000); //TC1 channel 1, is sample rate
 
   VIdac.analogWrite(0, 0, 0, 1, 0);
-  VIdac.analogWrite(1, 0, 0, 1, 2000);
+  VIdac.analogWrite(1, 0, 0, 1, 3000);
   digitalWrite(ldac, LOW);
   delay(2);
   digitalWrite(ldac, HIGH); //synchronous update
+//  i_update(2); 
 }
 
 //=============================================================================================
@@ -49,65 +57,98 @@ void setup(void)
 void loop(void)
 {
 
-
   if (waveUpdate) {
     //Serial.println("SAMPLING");
     waveUpdate = false;
-    pulse_update();
+    wave_update();
+
+      //current_voltage = analogRead(A7);
+      //Serial.println(current_voltage);
+
+      if(sampleFlag){
+        sampleFlag= false;
+        sampleV();
+      }
+      
   }
+ 
 
   }
+  //
+    //=============================================================================================
+//=============================================================================================
+void sampleV(){
+  
+  Serial.println(float((analogRead(A7))*(3.3/4096))/0.1535-10.0);
+}
   //=============================================================================================
 //=============================================================================================
-void pulse_update() {
+void wave_update() {
   //Serial.println("update");
-  //VIdac.analogWrite(0, 0, 0, 1, waveformsTable[3][wavePos]);
+  VIdac.analogWrite(0, 0, 0, 1, waveformsTable[1][wavePos]);
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+
+  //Serial.println(waveformsTable[2][wavePos]);
+ wavePos++;
+  if(wavePos == maxSamplesNum){  // Reset the counter to repeat the wave
+    wavePos = 0;}
+  return;
+}
+//===============================================================================================
+void square_wave(){
+
  if(on){
-  VIdac.analogWrite(0, 0, 0, 1, 2333);
+  VIdac.analogWrite(0, 0, 0, 1, 3015);// current output = (2015+x)/100
   on=false;
  }
  else{
-  VIdac.analogWrite(0, 0, 0, 1, 1667);
+  VIdac.analogWrite(0, 0, 0, 1, waveformsTable[1][wavePos]);// current output = (2005-x)/100
   on=true;
  }
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
-  //wavePos++;
-  //if(wavePos == maxSamplesNum){  // Reset the counter to repeat the wave
-  //  wavePos = 0;}
+  return;
+  
+}
+  //=============================================================================================
+//=============================================================================================
+void i_update(float target_i){
+  int target_x=0;
+  if(target_i >0.0){
+    target_x = int(2015.0+(target_i*100.0));
+  }
+  if(target_i <0.0){
+    target_x = int(2005.0-(target_i*100.0));
+  }
+   if(target_i == 0.0){
+    target_x = 2000;
+  }
+
+  Serial.println(target_x);
+  
+  VIdac.analogWrite(0, 0, 0, 1, target_x);// current output = (2015+x)/100
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  
+
   return;
 }
 //=============================================================================================
-//                                   Pulse state machine
+//                                   
 //=============================================================================================
-
-void state_machine(){
-  stateChange=false;
-  
-  if(matterState>=4){matterState=0;}//rollover and continue from 0
- 
-  switch(matterState){
-    case 0: //forward pulse
-      state_duration(fwd_pulse);
-      //set dac
-      //apply power
-      break;
-    case 1: //waiting period forward->reverse
-    state_duration(fwd_wait);
-      //remove power
-      break;
-    case 2: //reverse pulse
-    state_duration(rev_pulse);
-      //set dac
-      //apply power
-      break;
-    case 3: //waiting period reverse->forward
-    state_duration(rev_wait);
-      //remove power
-      break;
-  }
-
-  
+void hold_volt(){
+      current_voltage = analogRead(A7);
+      if(current_voltage>1300){
+        current_i+=-0.1;
+        i_update(current_i);
+      }
+        current_voltage = analogRead(A7);
+      if(current_voltage<1300){
+        current_i+=0.1;
+        i_update(current_i);
+      }
+  return;
 }
 
 //=============================================================================================
@@ -121,13 +162,13 @@ void receive_command() {
   if (command.substring(0, command.indexOf(":")) == "SCANV") { //Start a voltage scan
     Serial.println("STARTING VOLTAGE SCAN");
     scanning = true; //initiate scan
-    session_start_time=millis();
-    fwd_voltage_scan(true);
+
+
     //startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is sensor sample rate
-    log_rate = 200;
+
   }
   if (command.substring(0, command.indexOf(":")) == "SCANI") { //start a current scan
-    session_start_time = millis();
+
     scanning = true; //initiate scan
     startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate
   }
@@ -147,16 +188,16 @@ void receive_command() {
     volt_sec = command.substring(command.indexOf(":") + 1).toFloat();
   }
    if (command.substring(0, command.indexOf(":")) == "RUN") { // maximum voltage for scan or polish followed by :<maximum_current>
-    run_process(max_current, command.substring(command.indexOf(":") + 1).toFloat());
-    session_start_time = millis();
+   // run_process(max_current, command.substring(command.indexOf(":") + 1).toFloat());
+
     startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is serial send timer and sensor sample rate set to 50Hz
-    log_rate = 200;
+
   }
   return;
 
 }
 void send_sample() {
-  Serial.print("data:");
+  /*Serial.print("data:");
   Serial.print(oe_voltage);
   Serial.print(":");
   Serial.print(oe_current_s);
@@ -171,83 +212,16 @@ void send_sample() {
   Serial.print(":");
   Serial.print(total_charge_transfer);
   Serial.print(":");
-  Serial.println(sample_time);
+  Serial.println(sample_time);*/
 
   return;
 }
 
 //=============================================================================================
 //=============================================================================================
-//                                   POWER CONTROL FUNCTIONS
-//=============================================================================================
-//=============================================================================================
-void run_process(float current, float total_charge){
-  dacUp(30, current);
-  charge_target = total_charge; //set total charge transfer
-  previous_accumulation = millis();
-  Serial.println("STARTING POLISH CYCLE, CHARGE LIMIT - ");
-  Serial.println(charge_target);
-  polishing = true;
-  return;
-}
-//=============================================================================================
-//=============================================================================================
-void fwd_voltage_scan(boolean electrode) { //scanrate in volts per second electrode to scan (outer = true)
-  scan_limit = max_voltage;
-  scan_dir = true; //set scan direction positive
-  dacUp(min_voltage, 500);
-
-  if (electrode) { //outer electrode selected
-    volt_step = volt_sec / 100;
-    startTimer(TC1, 1, TC4_IRQn, 100); //start scan with an update rate of 100hz
-  }
-  return;
-}
-
-
-//=============================================================================================
-//=============================================================================================
-void dacUp(float voltage, int current) {
-  current_voltage = voltage;
-  current_current = current;
-  unsigned int v_dig = int(round(voltage * v_factor));
-  float VLim = 4.75-13750.0*(float(current)/1000.0)/15000.0;
-  VLim = VLim/1.181; //correct for amplifier gain to obtain 4.75V-(0A) (close to 5V rail).
-  //float VLim = 4.75-31600.0*(float(current)/1000.0)/5000.0;
-  
-  unsigned int i_dig = int((VLim/4.096)*4095.0);
-
-  //unsigned int i_dig = map(int(VLim), 0, 40960, 0, 4095);//int(round(current*i_factor));
-  //Serial.println("AKSHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHF");
-  //Serial.println(i_dig);
-  //Serial.println(v_dig);
-  //Serial.println(i_dig);
-
-  //write new values to mcp dac channels A and B with synchronous update enabled
-  VIdac.analogWrite(0, 0, 0, 1, v_dig);
-  VIdac.analogWrite(1, 0, 0, 1, i_dig);
-  digitalWrite(ldac, LOW);
-  delay(2);
-  digitalWrite(ldac, HIGH); //synchronous update
-
-  return;
-}
-
-
 //=============================================================================================
 //=============================================================================================
 
-//=============================================================================================
-//=============================================================================================
-
-//=============================================================================================
-//                                Sensor Sampling
-//=============================================================================================
-
-
-//=============================================================================================
-//                                Timer Interrupts
-//=============================================================================================
 //TC1 ch 0
 void TC3_Handler()
 {
@@ -260,8 +234,7 @@ void TC3_Handler()
 void TC4_Handler()
 {
   TC_GetStatus(TC1, 1);
-  output_update_flag = true;
-  digitalWrite(13, l = !l);
+  sampleFlag = true;
   return;
 }
 //=============================================================================================
@@ -300,4 +273,3 @@ void startTimer(Tc *tc, uint32_t channel, IRQn_Type irq, uint32_t frequency) {
 void stopTimer(IRQn_Type irq) {
   NVIC_DisableIRQ(irq);
 }
-
