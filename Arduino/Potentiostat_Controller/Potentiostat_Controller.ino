@@ -38,11 +38,11 @@ void setup(void)
 
   VIdac.begin();
   delay(5);
-  startTimer(TC1, 0, TC3_IRQn, 1000); //TC1 channel 0, is update rate
-  startTimer(TC1, 1, TC4_IRQn, 2000); //TC1 channel 1, is sample rate
+  startTimer(TC1, 0, TC3_IRQn, updateRate); //TC1 channel 0, is update rate
+  startTimer(TC1, 1, TC4_IRQn, sampleRate); //TC1 channel 1, is sample rate
 
   VIdac.analogWrite(0, 0, 0, 1, 0);
-  VIdac.analogWrite(1, 0, 0, 1, 3000);
+  VIdac.analogWrite(1, 0, 0, 1, 2048);
   digitalWrite(ldac, LOW);
   delay(2);
   digitalWrite(ldac, HIGH); //synchronous update
@@ -57,29 +57,68 @@ void setup(void)
 void loop(void)
 {
 
-  if (waveUpdate) {
-    //Serial.println("SAMPLING");
-    waveUpdate = false;
-    wave_update();
 
       //current_voltage = analogRead(A7);
       //Serial.println(current_voltage);
-
-      if(sampleFlag){
-        sampleFlag= false;
-        sampleV();
-      }
+  if(sampleFlag){
+    sampleFlag= false;
+    sampleV();
+  }
       
   }
- 
-
+//=============================================================================================
+//=============================================================================================
+//                                      END OF MAIN LOOP
+//=============================================================================================
+//=============================================================================================
+//=============================================================================================
+//                                   Pulse Functions
+//=============================================================================================
+void fwd_pulse(){
+  //wait for lower threshold voltage
+  float cell_v = get_avg();
+  while(cell_v < 1.5){//======================================================================= forward pulse limit voltage
+    if (waveUpdate) {
+      waveUpdate = false;
+      i_inc();
+     }
   }
-  //
-    //=============================================================================================
+
+  return;
+}
+
+
+  //=============================================================================================
+//=============================================================================================
+void i_inc(){
+  i_out+=1;
+  VIdac.analogWrite(0, 0, 0, 1, i_out);
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  
+  return;
+}
+
+//=============================================================================================
+//                                   Other functions
 //=============================================================================================
 void sampleV(){
-  
-  Serial.println(float((analogRead(A7))*(3.3/4096))/0.1535-10.0);
+  rolling_avg[cRollingCount] = -(float((analogRead(A7))*(3.3/4096))/0.1535-10.0); //input amplifier gain  = 0.1535
+  cRollingCount += 1;
+  if(cRollingCount >= smoothArrayLen){
+    cRollingCount = 0;
+  }
+  Serial.println(get_avg());
+  //Serial.println(float((analogRead(A7))*(3.3/4096))/0.1535-10.0));
+}
+  //=============================================================================================
+//=============================================================================================
+float get_avg(){
+  float sense_avg=0;
+  for(int i; i > smoothArrayLen; i++){
+    sense_avg += rolling_avg[i];
+  }
+  return(sense_avg/smoothArrayLen);
 }
   //=============================================================================================
 //=============================================================================================
@@ -111,29 +150,7 @@ void square_wave(){
   return;
   
 }
-  //=============================================================================================
-//=============================================================================================
-void i_update(float target_i){
-  int target_x=0;
-  if(target_i >0.0){
-    target_x = int(2015.0+(target_i*100.0));
-  }
-  if(target_i <0.0){
-    target_x = int(2005.0-(target_i*100.0));
-  }
-   if(target_i == 0.0){
-    target_x = 2000;
-  }
 
-  Serial.println(target_x);
-  
-  VIdac.analogWrite(0, 0, 0, 1, target_x);// current output = (2015+x)/100
-  digitalWrite(ldac, LOW);
-  digitalWrite(ldac, HIGH); //synchronous update
-  
-
-  return;
-}
 //=============================================================================================
 //                                   
 //=============================================================================================
@@ -141,12 +158,12 @@ void hold_volt(){
       current_voltage = analogRead(A7);
       if(current_voltage>1300){
         current_i+=-0.1;
-        i_update(current_i);
+        //i_update(current_i);
       }
         current_voltage = analogRead(A7);
       if(current_voltage<1300){
         current_i+=0.1;
-        i_update(current_i);
+        //i_update(current_i);
       }
   return;
 }
@@ -256,7 +273,7 @@ void TC5_Handler()
   return;
 }
 //=============================================================================================
-//startTimer and stopTimer functions written by nameless open source codera
+//startTimer and stopTimer functions were written by a nameless open source coder
 //=============================================================================================
 void startTimer(Tc *tc, uint32_t channel, IRQn_Type irq, uint32_t frequency) {
   pmc_set_writeprotect(false);
