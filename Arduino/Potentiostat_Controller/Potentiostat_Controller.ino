@@ -56,14 +56,28 @@ void setup(void)
 //=============================================================================================
 void loop(void)
 {
+  i_out=2048;
+    VIdac.analogWrite(0, 0, 0, 1, 2048);
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  sampleV();
+  
+fwd_pulse();
 
+fwd_interval();
+
+  /*  if (waveUpdate) {
+      waveUpdate = false;
+      //i_inc();
+      wave_update();
+   }*/
 
       //current_voltage = analogRead(A7);
       //Serial.println(current_voltage);
-  if(sampleFlag){
+ /* if(sampleFlag){
     sampleFlag= false;
     sampleV();
-  }
+  }*/
       
   }
 //=============================================================================================
@@ -77,21 +91,38 @@ void loop(void)
 void fwd_pulse(){
   //wait for lower threshold voltage
   float cell_v = get_avg();
-  while(cell_v < 1.5){//======================================================================= forward pulse limit voltage
+  while(cell_v > -0.5){//======================================================================= forward pulse limit voltage
     if (waveUpdate) {
       waveUpdate = false;
       i_inc();
+ 
+      //Serial.println(get_avg());
      }
+      if(sampleFlag){ //sample at intervals set by timer overflow
+        sampleFlag= false;
+        sampleV();
+         cell_v = get_avg();
+         //cell_v = rolling_avg[cRollingCount];
+         //Serial.println(cell_v);
+      }
   }
 
   return;
 }
-
+//=============================================================================================
+//=============================================================================================
+void fwd_interval(){
+  
+  
+}
 
   //=============================================================================================
 //=============================================================================================
 void i_inc(){
-  i_out+=1;
+  i_out+=50;
+  if(i_out>4095){
+    i_out=2048;
+  }
   VIdac.analogWrite(0, 0, 0, 1, i_out);
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
@@ -103,22 +134,23 @@ void i_inc(){
 //                                   Other functions
 //=============================================================================================
 void sampleV(){
-  rolling_avg[cRollingCount] = -(float((analogRead(A7))*(3.3/4096))/0.1535-10.0); //input amplifier gain  = 0.1535
+  rolling_avg[cRollingCount] = -(float((analogRead(A7))*(3.3/4096.0))/0.1535-10.0); //input amplifier gain  = 0.1535
   cRollingCount += 1;
   if(cRollingCount >= smoothArrayLen){
     cRollingCount = 0;
   }
-  Serial.println(get_avg());
+  //Serial.println(get_avg());
   //Serial.println(float((analogRead(A7))*(3.3/4096))/0.1535-10.0));
 }
   //=============================================================================================
 //=============================================================================================
 float get_avg(){
-  float sense_avg=0;
-  for(int i; i > smoothArrayLen; i++){
+  float sense_avg=0.0;
+  for(int i=0; i < smoothArrayLen; i++){
     sense_avg += rolling_avg[i];
   }
-  return(sense_avg/smoothArrayLen);
+  sense_avg=sense_avg/smoothLen;
+  return(sense_avg);
 }
   //=============================================================================================
 //=============================================================================================
@@ -252,6 +284,7 @@ void TC4_Handler()
 {
   TC_GetStatus(TC1, 1);
   sampleFlag = true;
+  //sampleV();
   return;
 }
 //=============================================================================================

@@ -8,18 +8,14 @@
 #define Vdac 0 /
 #define Idac 1 //opposite of Vdac
 
-#define smoothLen 10
+#define smoothLen 10.0
 #define smoothArrayLen 10
 
-#define updateRate 10000
-#define sampleRate 100000
+#define updateRate 100000
+#define sampleRate 300000
 
 #define iSlope 1 //rise time of current waveform in units of Amps/ms
-//=============================================================================================
-//                                      constants
-//=============================================================================================
 #define v_factor 99.55
-
 
 //=============================================================================================
 //                                      Flags
@@ -27,9 +23,6 @@
 volatile boolean sampleFlag = false;
 volatile boolean waveUpdate = false;
 boolean scanning = false;
-
-
-
 
 boolean on = true;
 boolean v_lim = true;
