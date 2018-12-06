@@ -8,15 +8,18 @@
 #define Vdac 0 /
 #define Idac 1 //opposite of Vdac
 
-#define smoothLen 10.0
-#define smoothArrayLen 10
+#define smoothLen 5.0
+#define smoothArrayLen 5
 
-#define updateRate 100000
-#define sampleRate 300000
+#define updateRate 1000
+#define sampleRate 10000
 
-#define iSlope 1 //rise time of current waveform in units of Amps/ms
+#define iSlope 1 //rise time of current waveform in units of Amps/updateRate
 #define v_factor 99.55
 
+#define interval_limit 0.0
+#define fwd_limit 1
+#define rev_limit -0.5
 //=============================================================================================
 //                                      Flags
 //=============================================================================================
@@ -35,6 +38,7 @@ int cRollingCount = 0; //variable storing current smoothing array location
 //                                      Global Variables
 //=============================================================================================
 float current_i=0;
+float ocp = 0;
 
 //power control variables
 float current_voltage = 0.0; // this is the output voltage of the OPA regulator not the cell voltage

@@ -56,28 +56,26 @@ void setup(void)
 //=============================================================================================
 void loop(void)
 {
-  i_out=2048;
+  /*i_out=2048;
     VIdac.analogWrite(0, 0, 0, 1, 2048);
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
   sampleV();
-  
+  */
+    if (waveUpdate) {
+      waveUpdate = false;
+      i_sin();
+ 
+
+     }
+
+ /* 
 fwd_pulse();
 
 fwd_interval();
 
-  /*  if (waveUpdate) {
-      waveUpdate = false;
-      //i_inc();
-      wave_update();
-   }*/
-
-      //current_voltage = analogRead(A7);
-      //Serial.println(current_voltage);
- /* if(sampleFlag){
-    sampleFlag= false;
-    sampleV();
-  }*/
+rev_pulse();
+*/
       
   }
 //=============================================================================================
@@ -85,16 +83,107 @@ fwd_interval();
 //                                      END OF MAIN LOOP
 //=============================================================================================
 //=============================================================================================
+void fwd_sin(){
+    VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+
+  float cell_v = get_avg();
+  int array_cap=0;
+
+  i_out=2048;
+Serial.print("FWD : ");
+  while((cell_v < fwd_limit) || array_cap < smoothArrayLen ){ //smoothArrayLen ){//======================================================================= forward pulse limit voltage
+   array_cap++;
+    if (waveUpdate) {
+      waveUpdate = false;
+      i_sin();
+     }
+      if(sampleFlag){ //sample at intervals set by timer overflow
+        sampleFlag= false;
+        sampleV();
+         cell_v = get_avg();
+         //cell_v = rolling_avg[cRollingCount];
+         //Serial.println(cell_v);
+      }
+  }
+  Serial.print("FWD : ");
+ // Serial.println(cell_v);
+  return;
+}
 //=============================================================================================
 //                                   Pulse Functions
 //=============================================================================================
 void fwd_pulse(){
+    VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
   //wait for lower threshold voltage
   float cell_v = get_avg();
-  while(cell_v > -0.5){//======================================================================= forward pulse limit voltage
+  int array_cap=0;
+  //delayMicroseconds(500);
+  i_out=2048;
+  //Serial.println("FWD PULSE");
+  while((cell_v < fwd_limit) || array_cap < smoothArrayLen ){ //smoothArrayLen ){//======================================================================= forward pulse limit voltage
+   array_cap++;
     if (waveUpdate) {
       waveUpdate = false;
-      i_inc();
+      //i_inc();
+      i_sin();
+     }
+      if(sampleFlag){ //sample at intervals set by timer overflow
+        sampleFlag= false;
+        sampleV();
+         cell_v = get_avg();
+         //cell_v = rolling_avg[cRollingCount];
+         //Serial.println(cell_v);
+      }
+  }
+  //Serial.print("FWD : ");
+ // Serial.println(cell_v);
+  return;
+}
+//=============================================================================================
+//=============================================================================================
+void fwd_interval(){
+  VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  //delayMicroseconds(5000);
+  int array_cap=0;
+  unsigned long interval_start = micros();
+  unsigned long interval_timer = micros();
+  while(((ocp > interval_limit) || (array_cap < smoothArrayLen)) && (interval_timer-interval_start) < 2500 ){
+    array_cap++;
+    interval_timer = micros();
+      if(sampleFlag){ //sample at intervals set by timer overflow
+        sampleFlag= false;
+        sampleV();
+         ocp = get_avg();
+         //cell_v = rolling_avg[cRollingCount];
+         //Serial.println(ocp);
+      }
+  }
+ //Serial.print("INTERVAL: ");
+  //Serial.println(ocp);
+  return;  
+}
+//=============================================================================================
+void rev_pulse(){
+  i_out=2048;
+ // Serial.print("REV : ");
+  VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  //wait for upper threshold voltage
+  float cell_v = get_avg();
+  //delayMicroseconds(500);
+  int array_cap=0;
+  while((cell_v > rev_limit) || (array_cap < smoothArrayLen)){ //smoothArrayLen){//======================================================================= forward pulse limit voltage
+    array_cap++;
+    if (waveUpdate) {
+      waveUpdate = false;
+      i_dec();
  
       //Serial.println(get_avg());
      }
@@ -106,22 +195,16 @@ void fwd_pulse(){
          //Serial.println(cell_v);
       }
   }
-
+  //Serial.print("REV : ");
+  //Serial.println(cell_v);
   return;
 }
-//=============================================================================================
-//=============================================================================================
-void fwd_interval(){
-  
-  
-}
-
   //=============================================================================================
 //=============================================================================================
 void i_inc(){
-  i_out+=50;
-  if(i_out>4095){
-    i_out=2048;
+  i_out+=iSlope;
+  if(i_out>3072){
+    i_out=3072;
   }
   VIdac.analogWrite(0, 0, 0, 1, i_out);
   digitalWrite(ldac, LOW);
@@ -129,7 +212,32 @@ void i_inc(){
   
   return;
 }
-
+//=============================================================================================
+//=============================================================================================
+void i_dec(){
+  i_out-=iSlope;
+  if(i_out<1024){
+    i_out=1024;
+  }
+  VIdac.analogWrite(0, 0, 0, 1, i_out);
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  
+  return;
+}
+//=============================================================================================
+//=============================================================================================
+void i_sin(){
+  i_out+=iSlope;
+  if(i_out>1800){
+    i_out=0;
+  }
+  VIdac.analogWrite(0, 0, 0, 1, int((sin(float(i_out)/10.0)*1000.0)+2000.0));
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  
+  return;
+}
 //=============================================================================================
 //                                   Other functions
 //=============================================================================================
