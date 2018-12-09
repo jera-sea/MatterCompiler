@@ -27,8 +27,6 @@ void setup(void)
   pinMode(ldac, OUTPUT);
   pinMode(A7, INPUT);
 
-  //put the outputs to sleep and set PWM off to begin with
-
   digitalWrite(ldac, HIGH);
 
   Serial.begin(115200);
@@ -84,13 +82,26 @@ void PPR(){
   
 fwd_pulse();
 
-    VIdac.analogWrite(0, 0, 0, 1, 2500);
+    VIdac.analogWrite(0, 0, 0, 1, 2048);
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
-delay(5);
-//fwd_interval();
+  delay(5);
+  //fwd_interval();
 
-rev_charge(pos_charge*charge_ratio);
+  rev_charge(pos_charge*charge_ratio);
+
+  if(fwd_duration > abs(float(rev_duration)/duty_cycle)){
+    r_start_c += 5;
+  }
+  else{
+    r_start_c -=5;
+  }
+  if(r_start_c < 1024){
+    r_start_c = 1024;
+  }
+  if(r_start_c > 2048){
+    r_start_c = 2048;
+  }
   return;
 }
 //=============================================================================================
@@ -106,14 +117,11 @@ void fwd_sin(){
   i_out=2048;
   while((cell_v < fwd_limit) || array_cap < smoothArrayLen ){ //smoothArrayLen ){//======================================================================= forward pulse limit voltage
    array_cap++;
-    if (waveUpdate) {
-      waveUpdate = false;
-      i_sin();
-     }
       if(sampleFlag){ //sample at intervals set by timer overflow
         sampleFlag= false;
         sampleV();
          cell_v = get_avg();
+         i_sin();
          //cell_v = rolling_avg[cRollingCount];
          //Serial.println(cell_v);
       }
@@ -126,6 +134,7 @@ void fwd_sin(){
 //                                   Pulse Functions
 //=============================================================================================
 void fwd_pulse(){
+  start_time = micros();
     VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
@@ -147,8 +156,9 @@ void fwd_pulse(){
          //Serial.println(cell_v);
       }
   }
+  fwd_duration = micros()-start_time;
   //Serial.print("FWD : ");
- Serial.println(pos_charge);
+  Serial.println(pos_charge);
   return;
 }
 //=============================================================================================
@@ -181,9 +191,9 @@ void rev_pulse(){
   float cell_v = get_avg();
   int array_cap=0;
   
-  i_out=2048;
+  i_out=r_start_c;
  // Serial.print("REV : ");
-  VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+  VIdac.analogWrite(0, 0, 0, 1, i_out);//set current to 0 for interval period
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
   //wait for upper threshold voltage
@@ -207,9 +217,9 @@ void rev_pulse(){
 }
 void rev_charge(float charge_limit){
   int array_cap=0;
-  
-  i_out=2048;
-  VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+  start_time = micros();
+  i_out=r_start_c;
+  VIdac.analogWrite(0, 0, 0, 1, i_out);//set current to 0 for interval period
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
     neg_charge=0.0;
@@ -219,11 +229,12 @@ void rev_charge(float charge_limit){
       if(sampleFlag){ //sample at intervals set by timer overflow
           sampleFlag= false;
           neg_charge += (((2048.0-float(i_out))/1024.0)*10.0);//*(1.0/float(sampleRate));
-          i_dec();
+          i_inc_neg();
       }
   }
-  Serial.print("R : ");
-  Serial.println(neg_charge);
+  rev_duration = micros()-start_time;
+  //Serial.print("R : ");
+  //Serial.println(neg_charge);
   
 }
   //=============================================================================================
@@ -239,6 +250,19 @@ void i_inc(){
   digitalWrite(ldac, HIGH); //synchronous update
   
   return;
+}
+void i_inc_neg(){
+    i_out+=neg_slope;
+  if(i_out>2048){
+    i_out=2048;
+  }
+
+  VIdac.analogWrite(0, 0, 0, 1, i_out);
+  digitalWrite(ldac, LOW);
+  digitalWrite(ldac, HIGH); //synchronous update
+  
+  return;
+  
 }
 //=============================================================================================
 //=============================================================================================

@@ -10,14 +10,15 @@
 #define smoothArrayLen 5
 
 #define updateRate 40000
-#define sampleRate 5000
+#define sampleRate 20000
 
 #define iSlope 5 //rise time of current waveform in units of Amps/updateRate
 
 #define interval_limit 0.0
-#define fwd_limit 0.8
+#define fwd_limit 0.9
 #define rev_limit -0.8
-#define charge_ratio = 1.0
+#define charge_ratio 1.0
+#define duty_cycle 0.5
 
 #define a_scale 0.000805664
 //=============================================================================================
@@ -39,9 +40,10 @@ int cRollingCount = 0; //variable storing current smoothing array location
 //=============================================================================================
 float current_i=0;
 float ocp = 0;
-
-int neg_slope = 5;
-int pos_slope = 5;
+//DAC control registers
+int neg_slope = 2;
+int pos_slope = 10;
+int r_start_c = 1024;
 
 float neg_charge =0;
 float pos_charge =0;
@@ -63,9 +65,10 @@ volatile byte matterState=0;
 volatile boolean stateChange = false;
 
 
-unsigned long current_time = 0;
-unsigned long previousSER_time = 0;
-unsigned long previous_accumulation=0;
+unsigned long fwd_duration = 0;
+unsigned long start_time = 0;
+unsigned long rev_duration = 0;
+
 unsigned long sample_time=0;
 
 int wavePos = 0;
