@@ -9,13 +9,13 @@
 #define smoothLen 5.0
 #define smoothArrayLen 5
 
-#define updateRate 40000
+#define updateRate 20000
 #define sampleRate 20000
 
 #define iSlope 5 //rise time of current waveform in units of Amps/updateRate
 
 #define interval_limit 0.0
-#define fwd_limit 0.9
+#define fwd_limit 0.7
 #define rev_limit -0.8
 #define charge_ratio 1.0
 #define duty_cycle 0.5
@@ -41,12 +41,12 @@ int cRollingCount = 0; //variable storing current smoothing array location
 float current_i=0;
 float ocp = 0;
 //DAC control registers
-int neg_slope = 2;
-int pos_slope = 10;
-int r_start_c = 1024;
+int neg_slope = 3;
+int pos_slope = 12; //
+int r_start_c = 1524;
 
-float neg_charge =0;
-float pos_charge =0;
+float neg_charge =0.0;
+float pos_charge =0.0;
 //power control variables
 float current_voltage = 0.0; // this is the output voltage of the OPA regulator not the cell voltage
 float sin_pos = 0.0;

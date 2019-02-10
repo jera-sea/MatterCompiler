@@ -36,11 +36,11 @@ void setup(void)
 
   VIdac.begin();
   delay(5);
-  startTimer(TC1, 0, TC3_IRQn, updateRate); //TC1 channel 0, is update rate
+  //startTimer(TC1, 0, TC3_IRQn, updateRate); //TC1 channel 0, is update rate
   startTimer(TC1, 1, TC4_IRQn, sampleRate); //TC1 channel 1, is sample rate
 
   VIdac.analogWrite(0, 0, 0, 1, 0);
-  VIdac.analogWrite(1, 0, 0, 1, 2048);
+  VIdac.analogWrite(1, 0, 0, 1, 1990);
   digitalWrite(ldac, LOW);
   delay(2);
   digitalWrite(ldac, HIGH); //synchronous update
@@ -61,160 +61,87 @@ void loop(void)
       sampleV();
       wave_update();
       //sampleV();
-      Serial.println(get_avg());
+      //Serial.println(get_avg());
  }*/
  PPR();
 
-
-
-  }
+}
 //=============================================================================================
 //=============================================================================================
 //                                      END OF MAIN LOOP
 //=============================================================================================
 //=============================================================================================
 void PPR(){
- i_out=2048;
-    VIdac.analogWrite(0, 0, 0, 1, 2048);
+  Serial.println("start");
+  i_out=1990;
+  VIdac.analogWrite(0, 0, 0, 1, 1990);
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
   sampleV();
+  delayMicroseconds(200);
   
-fwd_pulse();
+  fwd_pulse();
 
-    VIdac.analogWrite(0, 0, 0, 1, 2048);
+  VIdac.analogWrite(0, 0, 0, 1, 1990);
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
-  delay(5);
-  //fwd_interval();
+  delayMicroseconds(rev_duration);
 
   rev_charge(pos_charge*charge_ratio);
-
-  if(fwd_duration > abs(float(rev_duration)/duty_cycle)){
-    r_start_c += 5;
+  
+  if(fwd_duration > (abs(float(rev_duration)/duty_cycle)+20)) {
+    r_start_c += 10;
   }
-  else{
-    r_start_c -=5;
+  if((abs(float(rev_duration)/duty_cycle)-20) > fwd_duration ) {
+    r_start_c -= 10;
   }
-  if(r_start_c < 1024){
-    r_start_c = 1024;
+  
+  if(r_start_c < 1000){
+    r_start_c = 1000;
   }
-  if(r_start_c > 2048){
-    r_start_c = 2048;
+  if(r_start_c > 1990){
+    r_start_c = 1990;
   }
+  
   return;
 }
 //=============================================================================================
 //=============================================================================================
-void fwd_sin(){
-    VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
-  digitalWrite(ldac, LOW);
-  digitalWrite(ldac, HIGH); //synchronous update
-
-  float cell_v = get_avg();
-  int array_cap=0;
-
-  i_out=2048;
-  while((cell_v < fwd_limit) || array_cap < smoothArrayLen ){ //smoothArrayLen ){//======================================================================= forward pulse limit voltage
-   array_cap++;
-      if(sampleFlag){ //sample at intervals set by timer overflow
-        sampleFlag= false;
-        sampleV();
-         cell_v = get_avg();
-         i_sin();
-         //cell_v = rolling_avg[cRollingCount];
-         //Serial.println(cell_v);
-      }
-  }
-  //Serial.print("FWD : ");
- // Serial.println(cell_v);
-  return;
-}
 //=============================================================================================
 //                                   Pulse Functions
 //=============================================================================================
 void fwd_pulse(){
   start_time = micros();
-    VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
+    VIdac.analogWrite(0, 0, 0, 1, 2190);//set current to 0 for interval period
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
   //wait for lower threshold voltage
   float cell_v = get_avg();
   int array_cap=0;
-  //delayMicroseconds(500);
-  i_out=2048;
+  i_out=2190;//2190; //start at 2A
   pos_charge=0.0;
+ 
+  unsigned long interval_timer = micros();
   while((cell_v < fwd_limit) || array_cap < smoothArrayLen ){ //smoothArrayLen ){//======================================================================= forward pulse limit voltage
    array_cap++;
+   
       if(sampleFlag){ //sample at intervals set by timer overflow
         sampleFlag= false;
         sampleV();
          cell_v = get_avg();
-         pos_charge += (((float(i_out)-2048.0)/1024.0)*10.0);//*(1.0/float(sampleRate));
+         pos_charge += (((float(i_out)-1990.0))*float(micros()-interval_timer))/100.0;//*(1.0/float(sampleRate));
+         interval_timer = micros();
          i_inc();
-         //cell_v = rolling_avg[cRollingCount];
-         //Serial.println(cell_v);
       }
   }
   fwd_duration = micros()-start_time;
-  //Serial.print("FWD : ");
+  Serial.print("FWD : ");
   Serial.println(pos_charge);
   return;
 }
 //=============================================================================================
 //=============================================================================================
-void fwd_interval(){
-  VIdac.analogWrite(0, 0, 0, 1, 2048);//set current to 0 for interval period
-  digitalWrite(ldac, LOW);
-  digitalWrite(ldac, HIGH); //synchronous update
-  //delayMicroseconds(5000);
-  int array_cap=0;
-  unsigned long interval_start = micros();
-  unsigned long interval_timer = micros();
-  while(((ocp > interval_limit) || (array_cap < smoothArrayLen)) && (interval_timer-interval_start) < 2500 ){
-    array_cap++;
-    interval_timer = micros();
-      if(sampleFlag){ //sample at intervals set by timer overflow
-        sampleFlag= false;
-        sampleV();
-         ocp = get_avg();
-         //cell_v = rolling_avg[cRollingCount];
-         //Serial.println(ocp);
-      }
-  }
- //Serial.print("INTERVAL: ");
-  //Serial.println(ocp);
-  return;  
-}
 //=============================================================================================
-void rev_pulse(){
-  float cell_v = get_avg();
-  int array_cap=0;
-  
-  i_out=r_start_c;
- // Serial.print("REV : ");
-  VIdac.analogWrite(0, 0, 0, 1, i_out);//set current to 0 for interval period
-  digitalWrite(ldac, LOW);
-  digitalWrite(ldac, HIGH); //synchronous update
-  //wait for upper threshold voltage
-
-
-  while((cell_v > rev_limit) || (array_cap < smoothArrayLen)){ //smoothArrayLen){//======================================================================= forward pulse limit voltage
-    array_cap++;
-
-      if(sampleFlag){ //sample at intervals set by timer overflow
-          sampleFlag= false;
-          sampleV();
-         cell_v = get_avg();
-         i_dec();
-        //cell_v = rolling_avg[cRollingCount];
-      }
-  }
-  
-  //Serial.print("REV : ");
-  //Serial.println(cell_v);
-  return;
-}
 void rev_charge(float charge_limit){
   int array_cap=0;
   start_time = micros();
@@ -223,18 +150,22 @@ void rev_charge(float charge_limit){
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
     neg_charge=0.0;
+
+    unsigned long interval_timer=micros();
     while((neg_charge < charge_limit) || (array_cap < smoothArrayLen)){
     array_cap++;
 
       if(sampleFlag){ //sample at intervals set by timer overflow
           sampleFlag= false;
-          neg_charge += (((2048.0-float(i_out))/1024.0)*10.0);//*(1.0/float(sampleRate));
-          i_inc_neg();
+          neg_charge += (((2090.0-float(i_out)))*float(micros()-interval_timer))/100.0;//*(1.0/float(sampleRate));
+          interval_timer=micros();
+          //i_inc_neg();
       }
   }
   rev_duration = micros()-start_time;
-  //Serial.print("R : ");
-  //Serial.println(neg_charge);
+  Serial.print("R : ");
+  Serial.println(neg_charge);
+  Serial.println(i_out);
   
 }
   //=============================================================================================
@@ -253,8 +184,8 @@ void i_inc(){
 }
 void i_inc_neg(){
     i_out+=neg_slope;
-  if(i_out>2048){
-    i_out=2048;
+  if(i_out>1990){
+    i_out=1990;
   }
 
   VIdac.analogWrite(0, 0, 0, 1, i_out);
@@ -279,30 +210,16 @@ void i_dec(){
   return;
 }
 //=============================================================================================
-//=============================================================================================
-void i_sin(){
-  sin_pos+=0.7;
-  if(sin_pos>3600){
-    sin_pos=0;
-  }
-  VIdac.analogWrite(0, 0, 0, 1, int((sin(sin_pos/10.0)*1000.0)+2000.0));
-  digitalWrite(ldac, LOW);
-  digitalWrite(ldac, HIGH); //synchronous update
-  
-  return;
-}
-//=============================================================================================
 //                                   Other functions
 //=============================================================================================
 void sampleV(){
   //rolling_avg[cRollingCount] = -(float((analogRead(A7))*(3.3/4096.0))/0.1535-10.0); //input amplifier gain  = 0.1535 (put negative in front when connected to potentiostat)
-  rolling_avg[cRollingCount] = (float(analogRead(A7))*a_scale*6.96)-10.0-0.15;    //input amplifier gain  = -6.96 (put negative in front when connected to potentiostat) (mysterious 0.1V positive offset
+  rolling_avg[cRollingCount] = -((float(analogRead(A7))*a_scale*6.96)-10.0-0.175);    //input amplifier gain  = -6.96 (put negative in front when connected to potentiostat) (mysterious 0.1V positive offset
   cRollingCount += 1;
   if(cRollingCount >= smoothArrayLen){
     cRollingCount = 0;
   }
-  //Serial.println(get_avg());
-  //Serial.println(float((analogRead(A7))*(3.3/4096))/0.1535-10.0));
+
 }
   //=============================================================================================
 //=============================================================================================
@@ -318,14 +235,14 @@ float get_avg(){
 //=============================================================================================
 void wave_update() {
   //Serial.println("update");
-  VIdac.analogWrite(0, 0, 0, 1, waveformsTable[1][wavePos]);
+  VIdac.analogWrite(0, 0, 0, 1, int(float((waveformsTable[0][wavePos]-4096)*(-1))/16.0+2048.0));
   digitalWrite(ldac, LOW);
   digitalWrite(ldac, HIGH); //synchronous update
 
   //Serial.println(waveformsTable[2][wavePos]);
  wavePos++;
   if(wavePos == maxSamplesNum){  // Reset the counter to repeat the wave
-    wavePos = 0;}
+    }
   return;
 }
 //===============================================================================================
@@ -352,85 +269,14 @@ void hold_volt(){
       current_voltage = analogRead(A7);
       if(current_voltage>1300){
         current_i+=-0.1;
-        //i_update(current_i);
       }
         current_voltage = analogRead(A7);
       if(current_voltage<1300){
         current_i+=0.1;
-        //i_update(current_i);
       }
   return;
 }
 
-//=============================================================================================
-//=============================================================================================
-//                                   SERIAL COMMUNICATIONS
-//=============================================================================================
-//=============================================================================================
-void receive_command() {
-  String command = Serial.readStringUntil('\n');
-
-  if (command.substring(0, command.indexOf(":")) == "SCANV") { //Start a voltage scan
-    Serial.println("STARTING VOLTAGE SCAN");
-    scanning = true; //initiate scan
-
-
-    //startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is sensor sample rate
-
-  }
-  if (command.substring(0, command.indexOf(":")) == "SCANI") { //start a current scan
-
-    scanning = true; //initiate scan
-    startTimer(TC1, 0, TC3_IRQn, 25); //TC1 channel 0, is serial send timer and sensor sample rate
-  }
-  if (command.substring(0, command.indexOf(":")) == "MAXV") { // maximum voltage for scan or polish followed by :<maximum_voltage>
-    max_voltage = command.substring(command.indexOf(":") + 1).toFloat();
-  }
-  if (command.substring(0, command.indexOf(":")) == "MINV") { // minimum voltage for scan or polish followed by :<minimum_voltage>
-    min_voltage = command.substring(command.indexOf(":") + 1).toFloat();
-  }
-  if (command.substring(0, command.indexOf(":")) == "MAXI") { // maximum current for scan or polish followed by :<maximum_current>
-    max_current = command.substring(command.indexOf(":") + 1).toFloat();
-  }
-  if (command.substring(0, command.indexOf(":")) == "MINI") { // maximum voltage for scan or polish followed by :<maximum_current>
-    min_current = command.substring(command.indexOf(":") + 1).toFloat();
-  }
-  if (command.substring(0, command.indexOf(":")) == "VSEC") { // maximum voltage for scan or polish followed by :<maximum_current>
-    volt_sec = command.substring(command.indexOf(":") + 1).toFloat();
-  }
-   if (command.substring(0, command.indexOf(":")) == "RUN") { // maximum voltage for scan or polish followed by :<maximum_current>
-   // run_process(max_current, command.substring(command.indexOf(":") + 1).toFloat());
-
-    startTimer(TC1, 0, TC3_IRQn, 50); //TC1 channel 0, is serial send timer and sensor sample rate set to 50Hz
-
-  }
-  return;
-
-}
-void send_sample() {
-  /*Serial.print("data:");
-  Serial.print(oe_voltage);
-  Serial.print(":");
-  Serial.print(oe_current_s);
-  Serial.print(":");
-  Serial.print(ie_voltage);
-  Serial.print(":");
-  Serial.print(ie_current);
-  Serial.print(":");
-  Serial.print(surf_temp);
-  Serial.print(":");
-  Serial.print(el_flow);
-  Serial.print(":");
-  Serial.print(total_charge_transfer);
-  Serial.print(":");
-  Serial.println(sample_time);*/
-
-  return;
-}
-
-//=============================================================================================
-//=============================================================================================
-//=============================================================================================
 //=============================================================================================
 
 //TC1 ch 0
